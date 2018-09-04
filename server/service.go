@@ -144,5 +144,5 @@ func NextID() string {
 
 	h := sha1.New()
 	h.Write(bs)
-	return hex.EncodeToString(h.Sum(nil))[:16]
+	return hex.EncodeToString(h.Sum(nil))[:32]
 }
