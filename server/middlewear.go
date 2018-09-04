@@ -24,24 +24,24 @@ type loggingMiddleware struct {
 	logger log.Logger
 }
 
-func (mw loggingMiddleware) CreateFile(f ach.FileHeader) (id string, err error) {
 	defer func(begin time.Time) {
 		mw.logger.Log("method", "CreateFile", "id", f.ID, "took", time.Since(begin), "err", err)
 	}(time.Now())
+func (mw loggingMiddleware) CreateFile(f *ach.FileHeader) (id string, err error) {
 	return mw.next.CreateFile(f)
 }
 
-func (mw loggingMiddleware) GetFile(id string) (f ach.File, err error) {
 	defer func(begin time.Time) {
 		mw.logger.Log("method", "GetFile", "id", id, "took", time.Since(begin), "err", err)
 	}(time.Now())
+func (mw loggingMiddleware) GetFile(id string) (f *ach.File, err error) {
 	return mw.next.GetFile(id)
 }
 
-func (mw loggingMiddleware) GetFiles() []ach.File {
 	defer func(begin time.Time) {
 		mw.logger.Log("method", "GetFiles", "took", time.Since(begin))
 	}(time.Now())
+func (mw loggingMiddleware) GetFiles() []*ach.File {
 	return mw.next.GetFiles()
 }
 
@@ -54,10 +54,10 @@ func (mw loggingMiddleware) DeleteFile(id string) (err error) {
 
 //** BATCHES ** //
 
-func (mw loggingMiddleware) CreateBatch(fileID string, bh ach.BatchHeader) (id string, err error) {
 	defer func(begin time.Time) {
 		mw.logger.Log("method", "CreateBatch", "FileID", fileID, "batchID", bh.ID, "took", time.Since(begin), "err", err)
 	}(time.Now())
+func (mw loggingMiddleware) CreateBatch(fileID string, bh *ach.BatchHeader) (id string, err error) {
 	return mw.next.CreateBatch(fileID, bh)
 }
 
