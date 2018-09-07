@@ -8,6 +8,8 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+
+	"github.com/moov-io/ach/errors"
 )
 
 // testPPDWrite writes a PPD ACH file
@@ -82,12 +84,8 @@ func testFileWriteErr(t testing.TB) {
 	f := NewWriter(b)
 
 	if err := f.Write(file); err != nil {
-		if e, ok := err.(*FileError); ok {
-			if e.FieldName != "EntryAddendaCount" {
-				t.Errorf("%T: %s", err, err)
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, "EntryAddendaCount") {
+			t.Error(err.Error())
 		}
 	}
 }

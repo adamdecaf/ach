@@ -7,6 +7,8 @@ package ach
 import (
 	"fmt"
 	"strconv"
+
+	"github.com/moov-io/ach/errors"
 )
 
 // First position of all Record Types. These codes are uniquely assigned to
@@ -36,17 +38,6 @@ var (
 	msgFileNoneSEC       = "%v Standard Entry Class Code is not implemented"
 	msgFileIATSEC        = "%v Standard Entry Class Code should use iatBatch"
 )
-
-// FileError is an error describing issues validating a file
-type FileError struct {
-	FieldName string
-	Value     string
-	Msg       string
-}
-
-func (e *FileError) Error() string {
-	return fmt.Sprintf("%s %s", e.FieldName, e.Msg)
-}
 
 // File contains the structures of a parsed ACH File.
 type File struct {
@@ -80,7 +71,7 @@ func (f *File) Create() error {
 	}
 	// Requires at least one Batch in the new file.
 	if len(f.Batches) <= 0 && len(f.IATBatches) <= 0 {
-		return &FileError{FieldName: "Batches", Value: strconv.Itoa(len(f.Batches)), Msg: "must have []*Batches to be built"}
+		return errors.File("Batches", strconv.Itoa(len(f.Batches)), "must have []*Batches to be built")
 	}
 	// add 2 for FileHeader/control and reset if build was called twice do to error
 	totalRecordsInFile := 2
@@ -167,18 +158,16 @@ func (f *File) Validate() error {
 	// The value of the Batch Count Field is equal to the number of Company/Batch/Header Records in the file.
 	if f.Control.BatchCount != (len(f.Batches) + len(f.IATBatches)) {
 		msg := fmt.Sprintf(msgFileCalculatedControlEquality, len(f.Batches), f.Control.BatchCount)
-		return &FileError{FieldName: "BatchCount", Value: strconv.Itoa(len(f.Batches)), Msg: msg}
+		return errors.File("BatchCount", strconv.Itoa(len(f.Batches)), msg)
 	}
 
 	if err := f.isEntryAddendaCount(); err != nil {
-		return err
+		return errors.WithError(err)
 	}
-
 	if err := f.isFileAmount(); err != nil {
-		return err
+		return errors.WithError(err)
 	}
-
-	return f.isEntryHash()
+	return errors.WithError(f.isEntryHash())
 }
 
 // isEntryAddendaCount is prepared by hashing the RDFI’s 8-digit Routing Number in each entry.
@@ -195,7 +184,7 @@ func (f *File) isEntryAddendaCount() error {
 	}
 	if f.Control.EntryAddendaCount != count {
 		msg := fmt.Sprintf(msgFileCalculatedControlEquality, count, f.Control.EntryAddendaCount)
-		return &FileError{FieldName: "EntryAddendaCount", Value: f.Control.EntryAddendaCountField(), Msg: msg}
+		return errors.File("EntryAddendaCount", f.Control.EntryAddendaCountField(), msg)
 	}
 	return nil
 }
@@ -216,11 +205,11 @@ func (f *File) isFileAmount() error {
 	}
 	if f.Control.TotalDebitEntryDollarAmountInFile != debit {
 		msg := fmt.Sprintf(msgFileCalculatedControlEquality, debit, f.Control.TotalDebitEntryDollarAmountInFile)
-		return &FileError{FieldName: "TotalDebitEntryDollarAmountInFile", Value: f.Control.TotalDebitEntryDollarAmountInFileField(), Msg: msg}
+		return errors.File("TotalDebitEntryDollarAmountInFile", f.Control.TotalDebitEntryDollarAmountInFileField(), msg)
 	}
 	if f.Control.TotalCreditEntryDollarAmountInFile != credit {
 		msg := fmt.Sprintf(msgFileCalculatedControlEquality, credit, f.Control.TotalCreditEntryDollarAmountInFile)
-		return &FileError{FieldName: "TotalCreditEntryDollarAmountInFile", Value: f.Control.TotalCreditEntryDollarAmountInFileField(), Msg: msg}
+		return errors.File("TotalCreditEntryDollarAmountInFile", f.Control.TotalCreditEntryDollarAmountInFileField(), msg)
 	}
 	return nil
 }
@@ -230,7 +219,7 @@ func (f *File) isEntryHash() error {
 	hashField := f.calculateEntryHash()
 	if hashField != f.Control.EntryHashField() {
 		msg := fmt.Sprintf(msgFileCalculatedControlEquality, hashField, f.Control.EntryHashField())
-		return &FileError{FieldName: "EntryHash", Value: f.Control.EntryHashField(), Msg: msg}
+		return errors.File("EntryHash", f.Control.EntryHashField(), msg)
 	}
 	return nil
 }

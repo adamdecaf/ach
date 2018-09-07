@@ -7,6 +7,8 @@ package ach
 import (
 	"testing"
 	"time"
+
+	"github.com/moov-io/ach/errors"
 )
 
 // batch should never be used directly.
@@ -409,13 +411,8 @@ func BenchmarkBatchAddendaTraceNumber(b *testing.B) {
 // testNewBatchDefault validates error for NewBatch if invalid SEC Code
 func testNewBatchDefault(t testing.TB) {
 	_, err := NewBatch(mockBatchInvalidSECHeader())
-
-	if e, ok := err.(*FileError); ok {
-		if e.FieldName != "StandardEntryClassCode" {
-			t.Errorf("%T: %s", err, err)
-		}
-	} else {
-		t.Errorf("%T: %s", err, err)
+	if !errors.Contains(err, "StandardEntryClassCode") {
+		t.Errorf("expected StandardEntryClassCode, got %v", err.Error())
 	}
 }
 
@@ -647,13 +644,8 @@ func testIATBatch(t testing.TB) {
 	bh.ODFIIdentification = "123456789"
 
 	_, err := NewBatch(bh)
-
-	if e, ok := err.(*FileError); ok {
-		if e.FieldName != "StandardEntryClassCode" {
-			t.Errorf("%T: %s", err, err)
-		}
-	} else {
-		t.Errorf("%T: %s", err, err)
+	if errors.Contains(err, "StandardEntryClassCode") {
+		t.Errorf("expected StandardEntryClassCode, got %v", err.Error())
 	}
 }
 

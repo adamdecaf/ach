@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/moov-io/ach/errors"
 )
 
 // Batch holds the Batch Header and Batch Control and all Entry Records
@@ -41,7 +43,7 @@ func NewBatch(bh *BatchHeader) (Batcher, error) {
 		return NewBatchCTX(bh), nil
 	case "IAT":
 		msg := fmt.Sprintf(msgFileIATSEC, bh.StandardEntryClassCode)
-		return nil, &FileError{FieldName: "StandardEntryClassCode", Value: bh.StandardEntryClassCode, Msg: msg}
+		return nil, errors.File("StandardEntryClassCode", bh.StandardEntryClassCode, msg)
 	case "POP":
 		return NewBatchPOP(bh), nil
 	case "POS":
@@ -59,7 +61,7 @@ func NewBatch(bh *BatchHeader) (Batcher, error) {
 	default:
 	}
 	msg := fmt.Sprintf(msgFileNoneSEC, bh.StandardEntryClassCode)
-	return nil, &FileError{FieldName: "StandardEntryClassCode", Value: bh.StandardEntryClassCode, Msg: msg}
+	return nil, errors.File("StandardEntryClassCode", bh.StandardEntryClassCode, msg)
 }
 
 // verify checks basic valid NACHA batch rules. Assumes properly parsed records. This does not mean it is a valid batch as validity is tied to each batch type

@@ -6,6 +6,8 @@ package ach
 
 import (
 	"testing"
+
+	"github.com/moov-io/ach/errors"
 )
 
 // mockFilePPD creates an ACH file with PPD batch and entry
@@ -20,27 +22,6 @@ func mockFilePPD() *File {
 	return mockFile
 }
 
-// testFileError validates a file error
-func testFileError(t testing.TB) {
-	err := &FileError{FieldName: "mock", Msg: "test message"}
-	if err.Error() != "mock test message" {
-		t.Error("FileError Error has changed formatting")
-	}
-}
-
-// TestFileError tests validating a file error
-func TestFileError(t *testing.T) {
-	testFileError(t)
-}
-
-// BenchmarkFileError benchmarks validating a file error
-func BenchmarkFileError(b *testing.B) {
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		testFileError(b)
-	}
-}
-
 // testFileBatchCount validates if calculated count is different from control
 func testFileBatchCount(t testing.TB) {
 	file := mockFilePPD()
@@ -48,12 +29,8 @@ func testFileBatchCount(t testing.TB) {
 	// More batches than the file control count.
 	file.AddBatch(mockBatchPPD())
 	if err := file.Validate(); err != nil {
-		if e, ok := err.(*FileError); ok {
-			if e.FieldName != "BatchCount" {
-				t.Errorf("%T: %s", err, err)
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, "BatchCount") {
+			t.Errorf("expected BatchCount, but got %v", err)
 		}
 	}
 }
@@ -78,12 +55,8 @@ func testFileEntryAddenda(t testing.TB) {
 	// more entries than the file control
 	file.Control.EntryAddendaCount = 5
 	if err := file.Validate(); err != nil {
-		if e, ok := err.(*FileError); ok {
-			if e.FieldName != "EntryAddendaCount" {
-				t.Errorf("%T: %s", err, err)
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, "EntryAddendaCount") {
+			t.Error(err.Error())
 		}
 	}
 }
@@ -108,12 +81,8 @@ func testFileDebitAmount(t testing.TB) {
 	// inequality in total debit amount
 	file.Control.TotalDebitEntryDollarAmountInFile = 63
 	if err := file.Validate(); err != nil {
-		if e, ok := err.(*FileError); ok {
-			if e.FieldName != "TotalDebitEntryDollarAmountInFile" {
-				t.Errorf("%T: %s", err, err)
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, "TotalDebitEntryDollarAmountInFile") {
+			t.Errorf("expected TotalDebitEntryDollarAmountInFile, but got: %v", err)
 		}
 	}
 }
@@ -138,12 +107,8 @@ func testFileCreditAmount(t testing.TB) {
 	// inequality in total credit amount
 	file.Control.TotalCreditEntryDollarAmountInFile = 63
 	if err := file.Validate(); err != nil {
-		if e, ok := err.(*FileError); ok {
-			if e.FieldName != "TotalCreditEntryDollarAmountInFile" {
-				t.Errorf("%T: %s", err, err)
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, "TotalCreditEntryDollarAmountInFile") {
+			t.Errorf("expected TotalCreditEntryDollarAmountInFile, but got: %v", err)
 		}
 	}
 }
@@ -168,12 +133,8 @@ func testFileEntryHash(t testing.TB) {
 	file.Create()
 	file.Control.EntryHash = 63
 	if err := file.Validate(); err != nil {
-		if e, ok := err.(*FileError); ok {
-			if e.FieldName != "EntryHash" {
-				t.Errorf("%T: %s", err, err)
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, "EntryHash") {
+			t.Errorf("expected EntryHash, but got: %v", err)
 		}
 	}
 }
@@ -266,12 +227,8 @@ func BenchmarkFileBuildBadFileHeader(b *testing.B) {
 func testFileBuildNoBatch(t testing.TB) {
 	file := NewFile().SetHeader(mockFileHeader())
 	if err := file.Create(); err != nil {
-		if e, ok := err.(*FileError); ok {
-			if e.FieldName != "Batches" {
-				t.Errorf("%T: %s", err, err)
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, "Batches") {
+			t.Errorf("expected Batches, but got: %v", err)
 		}
 	}
 }

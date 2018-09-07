@@ -9,22 +9,9 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+
+	"github.com/moov-io/ach/errors"
 )
-
-// ParseError is returned for parsing reader errors.
-// The first line is 1.
-type ParseError struct {
-	Line   int    // Line number where the error occurred
-	Record string // Name of the record type being parsed
-	Err    error  // The actual error
-}
-
-func (e *ParseError) Error() string {
-	if e.Record == "" {
-		return fmt.Sprintf("line:%d %T %s", e.Line, e.Err, e.Err)
-	}
-	return fmt.Sprintf("line:%d record:%s %T %s", e.Line, e.Record, e.Err, e.Err)
-}
 
 // Reader reads records from a ACH-encoded file.
 type Reader struct {
@@ -44,13 +31,12 @@ type Reader struct {
 	recordName string
 }
 
-// error creates a new ParseError based on err.
+// error creates a new error with the parsing context based on err.
 func (r *Reader) error(err error) error {
-	return &ParseError{
-		Line:   r.lineNum,
-		Record: r.recordName,
-		Err:    err,
+	if r.recordName == "" {
+		return errors.New(fmt.Sprintf("line:%d %v", r.lineNum, err))
 	}
+	return errors.New(fmt.Sprintf("line:%d record:%s %v", r.lineNum, r.recordName, err))
 }
 
 // addCurrentBatch creates the current batch type for the file being read. A successful
@@ -90,7 +76,7 @@ func (r *Reader) Read() (File, error) {
 			}
 		case lineLength != RecordLength:
 			msg := fmt.Sprintf(msgRecordLength, lineLength)
-			err := &FileError{FieldName: "RecordLength", Value: strconv.Itoa(lineLength), Msg: msg}
+			err := errors.File("RecordLength", strconv.Itoa(lineLength), msg)
 			return r.File, r.error(err)
 		default:
 			r.line = line
@@ -102,12 +88,12 @@ func (r *Reader) Read() (File, error) {
 	if (FileHeader{}) == r.File.Header {
 		// There must be at least one File Header
 		r.recordName = "FileHeader"
-		return r.File, r.error(&FileError{Msg: msgFileHeader})
+		return r.File, r.error(errors.File("", "", msgFileHeader))
 	}
 	if (FileControl{}) == r.File.Control {
 		// There must be at least one File Control
 		r.recordName = "FileControl"
-		return r.File, r.error(&FileError{Msg: msgFileControl})
+		return r.File, r.error(errors.File("", "", msgFileControl))
 	}
 
 	return r.File, nil
@@ -176,7 +162,7 @@ func (r *Reader) parseLine() error {
 		}
 	default:
 		msg := fmt.Sprintf(msgUnknownRecordType, r.line[:1])
-		return r.error(&FileError{FieldName: "recordType", Value: r.line[:1], Msg: msg})
+		return r.error(errors.File("recordType", r.line[:1], msg))
 	}
 	return nil
 }
@@ -231,7 +217,7 @@ func (r *Reader) parseFileHeader() error {
 	r.recordName = "FileHeader"
 	if (FileHeader{}) != r.File.Header {
 		// There can only be one File Header per File exit
-		r.error(&FileError{Msg: msgFileHeader})
+		r.error(errors.File("", "", msgFileHeader))
 	}
 	r.File.Header.Parse(r.line)
 
@@ -246,7 +232,7 @@ func (r *Reader) parseBatchHeader() error {
 	r.recordName = "BatchHeader"
 	if r.currentBatch != nil {
 		// batch header inside of current batch
-		return r.error(&FileError{Msg: msgFileBatchInside})
+		return r.error(errors.File("", "", msgFileBatchInside))
 	}
 
 	// Ensure we have a valid batch header before building a batch.
@@ -271,7 +257,7 @@ func (r *Reader) parseEntryDetail() error {
 	r.recordName = "EntryDetail"
 
 	if r.currentBatch == nil {
-		return r.error(&FileError{Msg: msgFileBatchOutside})
+		return r.error(errors.File("", "", msgFileBatchOutside))
 	}
 	ed := new(EntryDetail)
 	ed.Parse(r.line)
@@ -288,10 +274,10 @@ func (r *Reader) parseAddenda() error {
 
 	if r.currentBatch == nil {
 		msg := fmt.Sprint(msgFileBatchOutside)
-		return r.error(&FileError{FieldName: "Addenda", Msg: msg})
+		return r.error(errors.File("Addenda", "", msg))
 	}
 	if len(r.currentBatch.GetEntries()) == 0 {
-		return r.error(&FileError{FieldName: "Addenda", Msg: msgFileBatchOutside})
+		return r.error(errors.File("Addenda", "", msgFileBatchOutside))
 	}
 	entryIndex := len(r.currentBatch.GetEntries()) - 1
 	entry := r.currentBatch.GetEntries()[entryIndex]
@@ -330,7 +316,7 @@ func (r *Reader) parseAddenda() error {
 		}
 	} else {
 		msg := fmt.Sprint(msgBatchAddendaIndicator)
-		return r.error(&FileError{FieldName: "AddendaRecordIndicator", Msg: msg})
+		return r.error(errors.File("AddendaRecordIndicator", "", msg))
 	}
 	return nil
 }
@@ -340,7 +326,7 @@ func (r *Reader) parseBatchControl() error {
 	r.recordName = "BatchControl"
 	if r.currentBatch == nil && r.IATCurrentBatch.GetEntries() == nil {
 		// batch Control without a current batch
-		return r.error(&FileError{Msg: msgFileBatchOutside})
+		return r.error(errors.File("", "", msgFileBatchOutside))
 	}
 
 	if r.currentBatch != nil {
@@ -363,7 +349,7 @@ func (r *Reader) parseFileControl() error {
 	r.recordName = "FileControl"
 	if (FileControl{}) != r.File.Control {
 		// Can be only one file control per file
-		return r.error(&FileError{Msg: msgFileControl})
+		return r.error(errors.File("", "", msgFileControl))
 	}
 	r.File.Control.Parse(r.line)
 	if err := r.File.Control.Validate(); err != nil {
@@ -379,7 +365,7 @@ func (r *Reader) parseIATBatchHeader() error {
 	r.recordName = "BatchHeader"
 	if r.IATCurrentBatch.Header != nil {
 		// batch header inside of current batch
-		return r.error(&FileError{Msg: msgFileBatchInside})
+		return r.error(errors.File("", "", msgFileBatchInside))
 	}
 
 	// Ensure we have a valid IAT BatchHeader before building a batch.
@@ -401,7 +387,7 @@ func (r *Reader) parseIATEntryDetail() error {
 	r.recordName = "EntryDetail"
 
 	if r.IATCurrentBatch.Header == nil {
-		return r.error(&FileError{Msg: msgFileBatchOutside})
+		return r.error(errors.File("", "", msgFileBatchOutside))
 	}
 
 	ed := new(IATEntryDetail)
@@ -419,10 +405,10 @@ func (r *Reader) parseIATAddenda() error {
 
 	if r.IATCurrentBatch.GetEntries() == nil {
 		msg := fmt.Sprint(msgFileBatchOutside)
-		return r.error(&FileError{FieldName: "Addenda", Msg: msg})
+		return r.error(errors.File("Addenda", "", msg))
 	}
 	if len(r.IATCurrentBatch.GetEntries()) == 0 {
-		return r.error(&FileError{FieldName: "Addenda", Msg: msgFileBatchOutside})
+		return r.error(errors.File("Addenda", "", msgFileBatchOutside))
 	}
 	entryIndex := len(r.IATCurrentBatch.GetEntries()) - 1
 	entry := r.IATCurrentBatch.GetEntries()[entryIndex]
@@ -434,7 +420,7 @@ func (r *Reader) parseIATAddenda() error {
 		}
 	} else {
 		msg := fmt.Sprint(msgIATBatchAddendaIndicator)
-		return r.error(&FileError{FieldName: "AddendaRecordIndicator", Msg: msg})
+		return r.error(errors.File("AddendaRecordIndicator", "", msg))
 	}
 	return nil
 }

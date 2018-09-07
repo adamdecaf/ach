@@ -5,21 +5,24 @@
 package ach
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/moov-io/ach/errors"
 )
 
 // testParseError validates a a parsing error
 func testParseError(t testing.TB) {
 	e := &FieldError{FieldName: "testField", Value: "nil", Msg: "could not parse"}
-	err := &ParseError{Line: 63, Err: e}
+	err := errors.Parse(63, "", e)
 	if err.Error() != "line:63 *ach.FieldError testField nil could not parse" {
-		t.Error("ParseError error string formatting has changed")
+		t.Errorf("got: %s", err.Error())
 	}
-	err.Record = "TestRecord"
+	err = errors.Parse(63, "TestRecord", e)
 	if err.Error() != "line:63 record:TestRecord *ach.FieldError testField nil could not parse" {
-		t.Error("ParseError error string formatting has changed")
+		t.Errorf("got: %s", err.Error())
 	}
 }
 
@@ -128,14 +131,8 @@ func testRecordTypeUnknown(t testing.TB) {
 	var line = "301 076401251 0764012510807291511A094101achdestname            companyname                    "
 	r := NewReader(strings.NewReader(line))
 	_, err := r.Read()
-	if p, ok := err.(*ParseError); ok {
-		if e, ok := p.Err.(*FileError); ok {
-			if e.FieldName != "recordType" {
-				t.Errorf("%T: %s", e, e)
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
-		}
+	if !errors.Contains(err, "recordType") {
+		t.Error(err.Error())
 	}
 }
 
@@ -158,14 +155,9 @@ func testTwoFileHeaders(t testing.TB) {
 	var twoHeaders = line + "\n" + line
 	r := NewReader(strings.NewReader(twoHeaders))
 	_, err := r.Read()
-	if p, ok := err.(*ParseError); ok {
-		if e, ok := p.Err.(*FileError); ok {
-			if e.Msg != msgFileControl {
-				t.Errorf("%T: %s", e, e)
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
-		}
+
+	if !errors.Contains(err, msgFileControl) {
+		t.Errorf(err.Error())
 	}
 }
 
@@ -196,14 +188,9 @@ func testTwoFileControls(t testing.TB) {
 	r.File.AddBatch(r.currentBatch)
 	r.File.Control.EntryHash = 5320001
 	_, err := r.Read()
-	if p, ok := err.(*ParseError); ok {
-		if e, ok := p.Err.(*FileError); ok {
-			if e.Msg != msgFileControl {
-				t.Errorf("%T: %s", e, e)
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
-		}
+
+	if !errors.Contains(err, msgFileControl) {
+		t.Errorf(err.Error())
 	}
 }
 
@@ -225,14 +212,9 @@ func testFileLineEmpty(t testing.TB) {
 	line := ""
 	r := NewReader(strings.NewReader(line))
 	_, err := r.Read()
-	if p, ok := err.(*ParseError); ok {
-		if e, ok := p.Err.(*FileError); ok {
-			if e.Msg != msgFileHeader {
-				t.Errorf("%#v", e)
-			}
-		} else {
-			t.Errorf("%T: %s", e, e)
-		}
+
+	if !errors.Contains(err, msgFileHeader) {
+		t.Errorf(err.Error())
 	}
 }
 
@@ -255,14 +237,8 @@ func testFileLineShort(t testing.TB) {
 	r := NewReader(strings.NewReader(line))
 	_, err := r.Read()
 
-	if p, ok := err.(*ParseError); ok {
-		if e, ok := p.Err.(*FileError); ok {
-			if e.FieldName != "RecordLength" {
-				t.Errorf("%T: %s", e, e)
-			}
-		} else {
-			t.Errorf("%T: %s", e, e)
-		}
+	if !errors.Contains(err, "RecordLength") {
+		t.Errorf(err.Error())
 	}
 }
 
@@ -284,14 +260,9 @@ func testFileLineLong(t testing.TB) {
 	var line = "1 line is 100 characters ..........................................................................!"
 	r := NewReader(strings.NewReader(line))
 	_, err := r.Read()
-	if p, ok := err.(*ParseError); ok {
-		if e, ok := p.Err.(*FileError); ok {
-			if e.FieldName != "RecordLength" {
-				t.Errorf("%T: %s", e, e)
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
-		}
+
+	if !errors.Contains(err, "RecordLength") {
+		t.Errorf(err.Error())
 	}
 }
 
@@ -317,14 +288,9 @@ func testFileFileHeaderErr(t testing.TB) {
 	// necessary to have a file control not nil
 	r.File.Control = mockFileControl()
 	_, err := r.Read()
-	if p, ok := err.(*ParseError); ok {
-		if e, ok := p.Err.(*FieldError); ok {
-			if e.Msg != msgFieldInclusion {
-				t.Errorf("%T: %s", e, e)
-			}
-		}
-	} else {
-		t.Errorf("%T: %s", err, err)
+
+	if !errors.Contains(err, msgFieldInclusion) {
+		t.Errorf(err.Error())
 	}
 }
 
@@ -348,14 +314,9 @@ func testFileBatchHeaderErr(t testing.TB) {
 	bh.ODFIIdentification = ""
 	r := NewReader(strings.NewReader(bh.String()))
 	_, err := r.Read()
-	if p, ok := err.(*ParseError); ok {
-		if e, ok := p.Err.(*FieldError); ok {
-			if e.Msg != msgFieldInclusion {
-				t.Errorf("%T: %s", e, e)
-			}
-		}
-	} else {
-		t.Errorf("%T: %s", err, err)
+
+	if err != nil && !errors.Contains(err, msgFieldInclusion) {
+		t.Errorf(err.Error())
 	}
 }
 
@@ -381,14 +342,8 @@ func testFileBatchHeaderDuplicate(t testing.TB) {
 	r.addCurrentBatch(NewBatchPPD(bh))
 	// read should fail because it is parsing a second batch header and there can only be one.
 	_, err := r.Read()
-	if p, ok := err.(*ParseError); ok {
-		if e, ok := p.Err.(*FieldError); ok {
-			if e.Msg != msgFieldInclusion {
-				t.Errorf("%T: %s", e, e)
-			}
-		}
-	} else {
-		t.Errorf("%T: %s", err, err)
+	if !errors.Contains(err, msgFieldInclusion) {
+		t.Errorf(err.Error())
 	}
 }
 
@@ -410,14 +365,9 @@ func testFileEntryDetailOutsideBatch(t testing.TB) {
 	ed := mockEntryDetail()
 	r := NewReader(strings.NewReader(ed.String()))
 	_, err := r.Read()
-	if p, ok := err.(*ParseError); ok {
-		if e, ok := p.Err.(*FileError); ok {
-			if e.Msg != msgFileBatchOutside {
-				t.Errorf("%T: %s", e, e)
-			}
-		}
-	} else {
-		t.Errorf("%T: %s", err, err)
+
+	if !errors.Contains(err, msgFileBatchOutside) {
+		t.Errorf(err.Error())
 	}
 }
 
@@ -443,14 +393,8 @@ func testFileEntryDetail(t testing.TB) {
 	r.addCurrentBatch(NewBatchPPD(mockBatchPPDHeader()))
 	r.currentBatch.SetHeader(mockBatchHeader())
 	_, err := r.Read()
-	if p, ok := err.(*ParseError); ok {
-		if e, ok := p.Err.(*FieldError); ok {
-			if e.Msg != msgFieldInclusion {
-				t.Errorf("%T: %s", e, e)
-			}
-		}
-	} else {
-		t.Errorf("%T: %s", err, err)
+	if !errors.Contains(err, msgFieldInclusion) {
+		t.Errorf(err.Error())
 	}
 }
 
@@ -478,14 +422,8 @@ func testFileAddenda05(t testing.TB) {
 	r := NewReader(strings.NewReader(line))
 	_, err := r.Read()
 	if err != nil {
-		if p, ok := err.(*ParseError); ok {
-			if e, ok := p.Err.(*FieldError); ok {
-				if e.Msg != msgFieldInclusion {
-					t.Errorf("%T: %s", e, e)
-				}
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, msgFieldInclusion) {
+			t.Errorf(err.Error())
 		}
 	}
 }
@@ -514,14 +452,8 @@ func testFileAddenda02invalid(t testing.TB) {
 	r := NewReader(strings.NewReader(line))
 	_, err := r.Read()
 	if err != nil {
-		if p, ok := err.(*ParseError); ok {
-			if e, ok := p.Err.(*FieldError); ok {
-				if e.FieldName != "TransactionDate" {
-					t.Errorf("%T: %s", e, e)
-				}
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, "TransactionDate") {
+			t.Error(err.Error())
 		}
 	}
 }
@@ -549,14 +481,8 @@ func testFileAddenda02(t testing.TB) {
 	r := NewReader(strings.NewReader(line))
 	_, err := r.Read()
 	if err != nil {
-		if p, ok := err.(*ParseError); ok {
-			if e, ok := p.Err.(*FieldError); ok {
-				if e.FieldName != "TransactionDate" {
-					t.Errorf("%T: %s", e, e)
-				}
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, "TransactionDate") {
+			t.Error(err.Error())
 		}
 	}
 }
@@ -587,14 +513,8 @@ func testFileAddenda98invalid(t testing.TB) {
 	r := NewReader(strings.NewReader(line))
 	_, err := r.Read()
 	if err != nil {
-		if p, ok := err.(*ParseError); ok {
-			if e, ok := p.Err.(*FieldError); ok {
-				if e.FieldName != "ChangeCode" {
-					t.Errorf("%T: %s", e, e)
-				}
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, "ChangeCode") {
+			t.Error(err.Error())
 		}
 	}
 }
@@ -622,17 +542,12 @@ func testFileAddenda98(t testing.TB) {
 	addenda.CorrectedData = "ACME One Corporation"
 	ed.AddAddenda(addenda)
 	line := bh.String() + "\n" + ed.String() + "\n" + ed.Addendum[0].String()
+	fmt.Println(line)
 	r := NewReader(strings.NewReader(line))
 	_, err := r.Read()
 	if err != nil {
-		if p, ok := err.(*ParseError); ok {
-			if e, ok := p.Err.(*FieldError); ok {
-				if e.Msg != msgFieldInclusion {
-					t.Errorf("%T: %s", e, e)
-				}
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, msgFieldInclusion) {
+			t.Error(err.Error())
 		}
 	}
 }
@@ -662,14 +577,8 @@ func testFileAddenda99invalid(t testing.TB) {
 	r := NewReader(strings.NewReader(line))
 	_, err := r.Read()
 	if err != nil {
-		if p, ok := err.(*ParseError); ok {
-			if e, ok := p.Err.(*FieldError); ok {
-				if e.FieldName != "ReturnCode" {
-					t.Errorf("%T: %s", e, e)
-				}
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, "ReturnCode") {
+			t.Error(err.Error())
 		}
 	}
 }
@@ -699,14 +608,8 @@ func testFileAddenda99(t testing.TB) {
 	r := NewReader(strings.NewReader(line))
 	_, err := r.Read()
 	if err != nil {
-		if p, ok := err.(*ParseError); ok {
-			if e, ok := p.Err.(*FieldError); ok {
-				if e.Msg != msgFieldInclusion {
-					t.Errorf("%T: %s", e, e)
-				}
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, msgFieldInclusion) {
+			t.Errorf(err.Error())
 		}
 	}
 }
@@ -730,14 +633,8 @@ func testFileAddendaOutsideBatch(t testing.TB) {
 	r := NewReader(strings.NewReader(addenda.String()))
 	_, err := r.Read()
 	if err != nil {
-		if p, ok := err.(*ParseError); ok {
-			if e, ok := p.Err.(*FileError); ok {
-				if e.Msg != msgFileBatchOutside {
-					t.Errorf("%T: %s", e, e)
-				}
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, msgFileBatchOutside) {
+			t.Errorf(err.Error())
 		}
 	}
 }
@@ -763,14 +660,9 @@ func testFileAddendaNoIndicator(t testing.TB) {
 	line := bh.String() + "\n" + ed.String() + "\n" + addenda.String()
 	r := NewReader(strings.NewReader(line))
 	_, err := r.Read()
-	if p, ok := err.(*ParseError); ok {
-		if e, ok := p.Err.(*FileError); ok {
-			if e.FieldName != "AddendaRecordIndicator" {
-				t.Errorf("%T: %s", e, e)
-			}
-		}
-	} else {
-		t.Errorf("%T: %s", err, err)
+
+	if !errors.Contains(err, "AddendaRecordIndicator") {
+		t.Error(err.Error())
 	}
 }
 
@@ -793,14 +685,9 @@ func testFileFileControlErr(t testing.TB) {
 	fc.BatchCount = 0
 	r := NewReader(strings.NewReader(fc.String()))
 	_, err := r.Read()
-	if p, ok := err.(*ParseError); ok {
-		if e, ok := p.Err.(*FieldError); ok {
-			if e.Msg != msgFieldInclusion {
-				t.Errorf("%T: %s", e, e)
-			}
-		}
-	} else {
-		t.Errorf("%T: %s", err, err)
+
+	if !errors.Contains(err, msgFieldInclusion) {
+		t.Errorf(err.Error())
 	}
 }
 
@@ -823,14 +710,9 @@ func testFileBatchHeaderSEC(t testing.TB) {
 	bh.StandardEntryClassCode = "ABC"
 	r := NewReader(strings.NewReader(bh.String()))
 	_, err := r.Read()
-	if p, ok := err.(*ParseError); ok {
-		if e, ok := p.Err.(*FileError); ok {
-			if e.FieldName != "StandardEntryClassCode" {
-				t.Errorf("%T: %s", e, e)
-			}
-		}
-	} else {
-		t.Errorf("%T: %s", err, err)
+
+	if !errors.Contains(err, "StandardEntryClassCode") {
+		t.Errorf(err.Error())
 	}
 }
 
@@ -852,12 +734,9 @@ func testFileFileControlNoCurrentBatch(t testing.TB) {
 	bc := mockBatchControl()
 	r := NewReader(strings.NewReader(bc.String()))
 	_, err := r.Read()
-	if p, ok := err.(*ParseError); ok {
-		if p.Record != "BatchControl" {
-			t.Errorf("%T: %s", p, p)
-		}
-	} else {
-		t.Errorf("%T: %s", err, err)
+
+	if !errors.Contains(err, "BatchControl") {
+		t.Errorf(err.Error())
 	}
 }
 
@@ -883,14 +762,9 @@ func testFileBatchControlValidate(t testing.TB) {
 	line := bh.String() + "\n" + ed.String() + "\n" + bc.String()
 	r := NewReader(strings.NewReader(line))
 	_, err := r.Read()
-	if p, ok := err.(*ParseError); ok {
-		if e, ok := p.Err.(*FieldError); ok {
-			if e.FieldName != "CompanyIdentification" {
-				t.Errorf("%T: %s", e, e)
-			}
-		}
-	} else {
-		t.Errorf("%T: %s", err, err)
+
+	if !errors.Contains(err, "CompanyIdentification") {
+		t.Errorf(err.Error())
 	}
 }
 
@@ -915,14 +789,9 @@ func testFileAddBatchValidation(t testing.TB) {
 	line := bh.String() + "\n" + ed.String() + "\n" + bc.String()
 	r := NewReader(strings.NewReader(line))
 	_, err := r.Read()
-	if p, ok := err.(*ParseError); ok {
-		if e, ok := p.Err.(*BatchError); ok {
-			if e.FieldName != "EntryAddendaCount" {
-				t.Errorf("%T: %s", e, e)
-			}
-		}
-	} else {
-		t.Errorf("%T: %s", err, err)
+
+	if !errors.Contains(err, "EntryAddendaCount") {
+		t.Errorf(err.Error())
 	}
 }
 
@@ -944,12 +813,8 @@ func testFileLongErr(t testing.TB) {
 	line := "101 076401251 0764012510807291511A094101achdestname            companyname                    5000companyname                         origid    PPDCHECKPAYMT000002080730   1076401250000001"
 	r := NewReader(strings.NewReader(line))
 	_, err := r.Read()
-	if e, ok := err.(*ParseError); ok {
-		if e, ok := e.Err.(*FieldError); ok {
-			if e.Msg != msgFieldInclusion {
-				t.Errorf("%T: %s", err, err)
-			}
-		}
+	if !errors.Contains(err, msgFieldInclusion) {
+		t.Errorf(err.Error())
 	}
 }
 
@@ -973,14 +838,8 @@ func testFileAddendaOutsideEntry(t testing.TB) {
 	line := bh.String() + "\n" + addenda.String()
 	r := NewReader(strings.NewReader(line))
 	_, err := r.Read()
-	if p, ok := err.(*ParseError); ok {
-		if e, ok := p.Err.(*FileError); ok {
-			if e.FieldName != "Addenda" {
-				t.Errorf("%T: %s", e, e)
-			}
-		}
-	} else {
-		t.Errorf("%T: %s", err, err)
+	if !errors.Contains(err, "Addenda") {
+		t.Errorf(err.Error())
 	}
 }
 
@@ -1005,14 +864,8 @@ func testFileFHImmediateOrigin(t testing.TB) {
 	// necessary to have a file control not nil
 	r.File.Control = mockFileControl()
 	_, err := r.Read()
-	if p, ok := err.(*ParseError); ok {
-		if e, ok := p.Err.(*FieldError); ok {
-			if e.Msg != msgFieldInclusion {
-				t.Errorf("%T: %s", e, e)
-			}
-		}
-	} else {
-		t.Errorf("%T: %s", err, err)
+	if !errors.Contains(err, msgFieldInclusion) {
+		t.Errorf(err.Error())
 	}
 }
 
@@ -1040,27 +893,14 @@ func testACHFileRead(t testing.TB) {
 	_, err = r.Read()
 
 	if err != nil {
-		if p, ok := err.(*ParseError); ok {
-			if e, ok := p.Err.(*BatchError); ok {
-				if e.FieldName != "entries" {
-					t.Errorf("%T: %s", e, e)
-				}
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, "entries") {
+			t.Errorf(err.Error())
 		}
 	}
 
-	err2 := r.File.Validate()
-
-	if err2 != nil {
-		if e, ok := err2.(*FileError); ok {
-			if e.FieldName != "BatchCount" {
-				t.Errorf("%T: %s", e, e)
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
-		}
+	err = r.File.Validate()
+	if !errors.Contains(err, "BatchCount") {
+		t.Errorf(err.Error())
 	}
 }
 
@@ -1088,27 +928,14 @@ func testACHFileRead2(t testing.TB) {
 	_, err = r.Read()
 
 	if err != nil {
-		if p, ok := err.(*ParseError); ok {
-			if e, ok := p.Err.(*BatchError); ok {
-				if e.FieldName != "entries" {
-					t.Errorf("%T: %s", e, e)
-				}
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, "entries") {
+			t.Errorf(err.Error())
 		}
 	}
 
-	err2 := r.File.Validate()
-
-	if err2 != nil {
-		if e, ok := err2.(*FileError); ok {
-			if e.FieldName != "BatchCount" {
-				t.Errorf("%T: %s", e, e)
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
-		}
+	err = r.File.Validate()
+	if !errors.Contains(err, "BatchCount") {
+		t.Errorf(err.Error())
 	}
 }
 
@@ -1136,27 +963,14 @@ func testACHFileRead3(t testing.TB) {
 	_, err = r.Read()
 
 	if err != nil {
-		if p, ok := err.(*ParseError); ok {
-			if e, ok := p.Err.(*BatchError); ok {
-				if e.FieldName != "entries" {
-					t.Errorf("%T: %s", e, e)
-				}
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, "entries") {
+			t.Errorf(err.Error())
 		}
 	}
 
-	err2 := r.File.Validate()
-
-	if err2 != nil {
-		if e, ok := err2.(*FileError); ok {
-			if e.FieldName != "BatchCount" {
-				t.Errorf("%T: %s", e, e)
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
-		}
+	err = r.File.Validate()
+	if !errors.Contains(err, "BatchCount") {
+		t.Errorf(err.Error())
 	}
 }
 
@@ -1184,27 +998,14 @@ func testACHIATAddenda17(t testing.TB) {
 	_, err = r.Read()
 
 	if err != nil {
-		if p, ok := err.(*ParseError); ok {
-			if e, ok := p.Err.(*BatchError); ok {
-				if e.FieldName != "entries" {
-					t.Errorf("%T: %s", e, e)
-				}
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, "entries") {
+			t.Error(err.Error())
 		}
 	}
 
-	err2 := r.File.Validate()
-
-	if err2 != nil {
-		if e, ok := err2.(*FileError); ok {
-			if e.FieldName != "BatchCount" {
-				t.Errorf("%T: %s", e, e)
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
-		}
+	err = r.File.Validate()
+	if err != nil && !errors.Contains(err, "BatchCount") {
+		t.Error(err.Error())
 	}
 }
 
@@ -1232,27 +1033,14 @@ func testACHIATAddenda1718(t testing.TB) {
 	_, err = r.Read()
 
 	if err != nil {
-		if p, ok := err.(*ParseError); ok {
-			if e, ok := p.Err.(*BatchError); ok {
-				if e.FieldName != "entries" {
-					t.Errorf("%T: %s", e, e)
-				}
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, "entries") {
+			t.Errorf(err.Error())
 		}
 	}
 
-	err2 := r.File.Validate()
-
-	if err2 != nil {
-		if e, ok := err2.(*FileError); ok {
-			if e.FieldName != "BatchCount" {
-				t.Errorf("%T: %s", e, e)
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
-		}
+	err = r.File.Validate()
+	if err != nil && !errors.Contains(err, "BatchCount") {
+		t.Errorf(err.Error())
 	}
 }
 
@@ -1280,14 +1068,8 @@ func testACHFileIATBatchHeader(t testing.TB) {
 	_, err = r.Read()
 
 	if err != nil {
-		if p, ok := err.(*ParseError); ok {
-			if e, ok := p.Err.(*FieldError); ok {
-				if e.FieldName != "ServiceClassCode" {
-					t.Errorf("%T: %s", e, e)
-				}
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, "ServiceClassCode") {
+			t.Errorf(err.Error())
 		}
 	}
 }
@@ -1316,14 +1098,8 @@ func testACHFileIATEntryDetail(t testing.TB) {
 	_, err = r.Read()
 
 	if err != nil {
-		if p, ok := err.(*ParseError); ok {
-			if e, ok := p.Err.(*FieldError); ok {
-				if e.FieldName != "TransactionCode" {
-					t.Errorf("%T: %s", e, e)
-				}
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, "TransactionCode") {
+			t.Errorf(err.Error())
 		}
 	}
 }
@@ -1352,14 +1128,8 @@ func testACHFileIATAddenda10(t testing.TB) {
 	_, err = r.Read()
 
 	if err != nil {
-		if p, ok := err.(*ParseError); ok {
-			if e, ok := p.Err.(*FieldError); ok {
-				if e.FieldName != "TransactionTypeCode" {
-					t.Errorf("%T: %s", e, e)
-				}
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, "TransactionTypeCode") {
+			t.Errorf(err.Error())
 		}
 	}
 }
@@ -1388,14 +1158,8 @@ func testACHFileIATBC(t testing.TB) {
 	_, err = r.Read()
 
 	if err != nil {
-		if p, ok := err.(*ParseError); ok {
-			if e, ok := p.Err.(*BatchError); ok {
-				if e.FieldName != "ODFIIdentification" {
-					t.Errorf("%T: %s", e, e)
-				}
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, "ODFIIdentification") {
+			t.Errorf(err.Error())
 		}
 	}
 }
@@ -1424,14 +1188,8 @@ func testACHFileIATBH(t testing.TB) {
 	_, err = r.Read()
 
 	if err != nil {
-		if p, ok := err.(*ParseError); ok {
-			if e, ok := p.Err.(*FileError); ok {
-				if e.Msg != msgFileBatchInside {
-					t.Errorf("%T: %s", e, e)
-				}
-			}
-		} else {
-			t.Errorf("%T: %s", err, err)
+		if !errors.Contains(err, msgFileBatchInside) {
+			t.Errorf(err.Error())
 		}
 	}
 }
