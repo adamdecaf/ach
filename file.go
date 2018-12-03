@@ -28,7 +28,7 @@ const (
 
 // Errors strings specific to parsing a Batch container
 var (
-	msgFileCalculatedControlEquality = "calculated %v is out-of-balance with control %v"
+	msgFileCalculatedControlEquality = "calculated %v is out-of-balance with file control %v"
 	// specific messages
 	msgRecordLength      = "must be 94 characters and found %d"
 	msgFileBatchOutside  = "outside of current batch"
@@ -149,13 +149,15 @@ func FileFromJSON(bs []byte) (*File, error) {
 		return nil, err
 	}
 	file.Header = header.Header
+
 	if !file.IsADV() {
 		file.Control.BatchCount = len(file.Batches)
 	} else {
-
 		file.ADVControl.BatchCount = len(file.Batches)
 	}
-
+	if err := file.Create(); err != nil {
+		return file, err
+	}
 	return file, nil
 }
 
@@ -188,7 +190,9 @@ func (f *File) setBatchesFromJSON(bs []byte) error {
 		if batches.Batches[i] == nil {
 			continue
 		}
-		f.Batches = append(f.Batches, batches.Batches[i])
+		if err := batches.Batches[i].Create(); err != nil {
+			f.AddBatch(batches.Batches[i])
+		}
 	}
 	return nil
 }
@@ -213,34 +217,58 @@ func (f *File) Create() error {
 		totalDebitAmount := 0
 		totalCreditAmount := 0
 
-		for i, batch := range f.Batches {
+		for i := range f.Batches {
+			if v := f.Batches[i].GetHeader(); v == nil {
+				f.Batches[i].SetHeader(NewBatchHeader())
+			}
+			if v := f.Batches[i].GetControl(); v == nil {
+				f.Batches[i].SetControl(NewBatchControl())
+			}
 
 			// create ascending batch numbers
 			f.Batches[i].GetHeader().BatchNumber = batchSeq
 			f.Batches[i].GetControl().BatchNumber = batchSeq
 			batchSeq++
+
 			// sum file entry and addenda records. Assume batch.Create() batch properly calculated control
-			fileEntryAddendaCount = fileEntryAddendaCount + batch.GetControl().EntryAddendaCount
+			addendaCount := 0
+			for j := range f.Batches[i].GetEntries() {
+				addendaCount += f.Batches[i].GetEntries()[j].addendaCount()
+			}
+			f.Batches[i].GetControl().EntryAddendaCount = addendaCount
+
 			// add 2 for Batch header/control + entry added count
-			totalRecordsInFile = totalRecordsInFile + 2 + batch.GetControl().EntryAddendaCount
+			fileEntryAddendaCount += addendaCount
+			totalRecordsInFile += 2 + addendaCount
+
 			// sum hash from batch control. Assume Batch.Build properly calculated field.
-			fileEntryHashSum = fileEntryHashSum + batch.GetControl().EntryHash
-			totalDebitAmount = totalDebitAmount + batch.GetControl().TotalDebitEntryDollarAmount
-			totalCreditAmount = totalCreditAmount + batch.GetControl().TotalCreditEntryDollarAmount
+			fileEntryHashSum += f.Batches[i].GetControl().EntryHash
+			totalDebitAmount += f.Batches[i].GetControl().TotalDebitEntryDollarAmount
+			totalCreditAmount += f.Batches[i].GetControl().TotalCreditEntryDollarAmount
 		}
-		for i, iatBatch := range f.IATBatches {
+		for i := range f.IATBatches {
+			if v := f.IATBatches[i].GetHeader(); v == nil {
+				f.IATBatches[i].SetHeader(NewIATBatchHeader())
+			}
+			if v := f.IATBatches[i].GetControl(); v == nil {
+				f.IATBatches[i].SetControl(NewBatchControl())
+			}
+
 			// create ascending batch numbers
 			f.IATBatches[i].GetHeader().BatchNumber = batchSeq
 			f.IATBatches[i].GetControl().BatchNumber = batchSeq
 			batchSeq++
+
 			// sum file entry and addenda records. Assume batch.Create() batch properly calculated control
-			fileEntryAddendaCount = fileEntryAddendaCount + iatBatch.GetControl().EntryAddendaCount
+			fileEntryAddendaCount += f.IATBatches[i].GetControl().EntryAddendaCount
+
 			// add 2 for Batch header/control + entry added count
-			totalRecordsInFile = totalRecordsInFile + 2 + iatBatch.GetControl().EntryAddendaCount
+			totalRecordsInFile += 2 + f.IATBatches[i].GetControl().EntryAddendaCount
+
 			// sum hash from batch control. Assume Batch.Build properly calculated field.
-			fileEntryHashSum = fileEntryHashSum + iatBatch.GetControl().EntryHash
-			totalDebitAmount = totalDebitAmount + iatBatch.GetControl().TotalDebitEntryDollarAmount
-			totalCreditAmount = totalCreditAmount + iatBatch.GetControl().TotalCreditEntryDollarAmount
+			fileEntryHashSum += f.IATBatches[i].GetControl().EntryHash
+			totalDebitAmount += f.IATBatches[i].GetControl().TotalDebitEntryDollarAmount
+			totalCreditAmount += f.IATBatches[i].GetControl().TotalCreditEntryDollarAmount
 		}
 
 		// create FileControl from calculated values
@@ -293,7 +321,6 @@ func (f *File) SetHeader(h FileHeader) *File {
 
 // Validate NACHA rules on the entire batch before being added to a File
 func (f *File) Validate() error {
-
 	if err := f.Header.Validate(); err != nil {
 		return err
 	}
@@ -476,7 +503,6 @@ func (f *File) IsADV() bool {
 }
 
 func (f *File) createFileADV() error {
-
 	// add 2 for FileHeader/control and reset if build was called twice do to error
 	totalRecordsInFile := 2
 	batchSeq := 1
@@ -486,13 +512,15 @@ func (f *File) createFileADV() error {
 	totalCreditAmount := 0
 
 	for i, batch := range f.Batches {
-		// create ascending batch numbers
-
 		if batch.GetHeader().StandardEntryClassCode != "ADV" {
-			return &FileError{FieldName: "EntryAddendaCount", Value: batch.GetHeader().StandardEntryClassCode,
-				Msg: msgFileADV}
+			return &FileError{
+				FieldName: "EntryAddendaCount",
+				Value:     batch.GetHeader().StandardEntryClassCode,
+				Msg:       msgFileADV,
+			}
 		}
 
+		// create ascending batch numbers
 		f.Batches[i].GetHeader().BatchNumber = batchSeq
 		f.Batches[i].GetADVControl().BatchNumber = batchSeq
 		batchSeq++

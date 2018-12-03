@@ -189,23 +189,10 @@ func (batch *Batch) build() error {
 	seq := 1
 
 	if !batch.IsADV() {
-		for i, entry := range batch.Entries {
-			entryCount++
+		for i := range batch.Entries {
+			entryCount += batch.Entries[i].addendaCount()
 
-			// Add in Addenda Count
-			if entry.Addenda02 != nil {
-				entryCount++
-			}
-			entryCount = entryCount + len(entry.Addenda05)
-			if entry.Addenda98 != nil {
-				entryCount++
-			}
-
-			if entry.Addenda99 != nil {
-				entryCount++
-			}
-
-			currentTraceNumberODFI, err := strconv.Atoi(entry.TraceNumberField()[:8])
+			currentTraceNumberODFI, err := strconv.Atoi(batch.Entries[i].TraceNumberField()[:8])
 			if err != nil {
 				return err
 			}
@@ -219,9 +206,11 @@ func (batch *Batch) build() error {
 			if currentTraceNumberODFI != batchHeaderODFI {
 				batch.Entries[i].SetTraceNumber(batch.Header.ODFIIdentification, seq)
 			}
+
 			seq++
 			addendaSeq := 1
-			for _, a := range entry.Addenda05 {
+
+			for _, a := range batch.Entries[i].Addenda05 {
 				// sequences don't exist in NOC or Return addenda
 				a.SequenceNumber = addendaSeq
 				a.EntryDetailSequenceNumber = batch.parseNumField(batch.Entries[i].TraceNumberField()[8:])
@@ -307,8 +296,15 @@ func (batch *Batch) GetEntries() []*EntryDetail {
 
 // AddEntry appends an EntryDetail to the Batch
 func (batch *Batch) AddEntry(entry *EntryDetail) {
+	if entry == nil {
+		return
+	}
+
 	batch.category = entry.Category
 	batch.Entries = append(batch.Entries, entry)
+	if c := batch.Control; c != nil {
+		c.EntryAddendaCount += entry.addendaCount()
+	}
 }
 
 // AddADVEntry appends an ADV EntryDetail to the Batch
@@ -394,20 +390,8 @@ func (batch *Batch) isBatchEntryCount() error {
 	entryCount := 0
 
 	if !batch.IsADV() {
-		for _, entry := range batch.Entries {
-			entryCount++
-
-			// Add in Addenda Count
-			if entry.Addenda02 != nil {
-				entryCount++
-			}
-			entryCount = entryCount + len(entry.Addenda05)
-			if entry.Addenda98 != nil {
-				entryCount++
-			}
-			if entry.Addenda99 != nil {
-				entryCount++
-			}
+		for i := range batch.Entries {
+			entryCount += batch.Entries[i].addendaCount()
 		}
 		if entryCount != batch.Control.EntryAddendaCount {
 			msg := fmt.Sprintf(msgBatchCalculatedControlEquality, entryCount, batch.Control.EntryAddendaCount)
@@ -569,7 +553,6 @@ func (batch *Batch) isTraceNumberODFI() error {
 // isAddendaSequence check multiple errors on addenda records in the batch entries
 func (batch *Batch) isAddendaSequence() error {
 	for _, entry := range batch.Entries {
-
 		if entry.Addenda02 != nil {
 			if entry.AddendaRecordIndicator != 1 {
 				return &BatchError{BatchNumber: batch.Header.BatchNumber, FieldName: "AddendaRecordIndicator", Msg: msgBatchAddendaIndicator}
@@ -585,14 +568,13 @@ func (batch *Batch) isAddendaSequence() error {
 			// check if sequence is ascending
 			for _, a := range entry.Addenda05 {
 				// sequences don't exist in NOC or Return addenda
-
 				if a.SequenceNumber < lastSeq {
 					msg := fmt.Sprintf(msgBatchAscending, a.SequenceNumber, lastSeq)
 					return &BatchError{BatchNumber: batch.Header.BatchNumber, FieldName: "SequenceNumber", Msg: msg}
 				}
 				lastSeq = a.SequenceNumber
 				// check that we are in the correct Entry Detail
-				if !(a.EntryDetailSequenceNumberField() == entry.TraceNumberField()[8:]) {
+				if a.EntryDetailSequenceNumberField() != entry.TraceNumberField()[8:] {
 					msg := fmt.Sprintf(msgBatchAddendaTraceNumber, a.EntryDetailSequenceNumberField(), entry.TraceNumberField()[8:])
 					return &BatchError{BatchNumber: batch.Header.BatchNumber, FieldName: "TraceNumber", Msg: msg}
 				}

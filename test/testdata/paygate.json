@@ -1,0 +1,84 @@
+{
+    "ReturnEntries": null,
+    "NotificationOfChange": null,
+    "fileADVControl": {
+        "totalCredit": 0,
+        "totalDebit": 0,
+        "entryHash": 0,
+        "entryAddendaCount": 0,
+        "batchCount": 0,
+        "id": ""
+    },
+    "fileControl": {
+        "totalCredit": 0,
+        "totalDebit": 0,
+        "entryHash": 0,
+        "entryAddendaCount": 0,
+        "blockCount": 1,
+        "batchCount": 1,
+        "id": "gvluehibyuuqdoajiqfn"
+    },
+    "IATBatches": null,
+    "batches": [
+        {
+            "batchControl": {
+                "batchNumber": 1,
+                "ODFIIdentification": "12104288",
+                "companyIdentification": "121042882",
+                "totalCredit": 0,
+                "totalDebit": 0,
+                "entryHash": 0,
+                "entryAddendaÇount": 0,
+                "serviceClassCode": 200,
+                "id": "gvluehibyuuqdoajiqfn"
+            },
+            "entryDetails": [
+                {
+                    "category": "Forward",
+                    "addenda05": [
+                        {
+                            "entryDetailSequenceNumber": 1,
+                            "sequenceNumber": 1,
+                            "paymentRelatedInformation": "Bonus for working on #OSS!",
+                            "typeCode": "",
+                            "id": "gvluehibyuuqdoajiqfn"
+                        }
+                    ],
+                    "traceNumber": "121042880000001",
+                    "addendaRecordIndicator": 1,
+                    "discretionaryData": "  ",
+                    "individualName": "Steven Tander         ",
+                    "identificationNumber": "#83738AB#      ",
+                    "amount": 100000,
+                    "DFIAccountNumber": "81967038518      ",
+                    "checkDigit": "4",
+                    "RDFIIdentification": "23138010",
+                    "transactionCode": 22,
+                    "id": "gvluehibyuuqdoajiqfn"
+                }
+            ],
+            "batchHeader": {
+                "batchNumber": 1,
+                "ODFIIdentification": "12104288",
+                "effectiveEntryDate": "2018-10-09T00:00:00Z",
+                "companyEntryDescription": "Online Order",
+                "standardEntryClassCode": "PPD",
+                "companyIdentification": "121042882",
+                "companyName": "Your Company, Inc",
+                "serviceClassCode": 200,
+                "id": "gvluehibyuuqdoajiqfn"
+            }
+        }
+    ],
+    "fileHeader": {
+        "immediateOriginName": "My Bank Name",
+        "immediateDestinationName": "Federal Reserve Bank",
+        "fileIDModifier": "A",
+        "fileCreationTime": "2018-10-08T00:00:00Z",
+        "fileCreationDate": "2018-10-08T00:00:00Z",
+        "immediateOrigin": "121042882",
+        "immediateDestination": "231380104",
+        "id": "gvluehibyuuqdoajiqfn"
+    },
+    "id": "gvluehibyuuqdoajiqfn"
+}

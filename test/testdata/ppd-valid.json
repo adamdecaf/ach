@@ -36,13 +36,21 @@
                     "discretionaryData": "  ",
                     "addendaRecordIndicator": 1,
                     "traceNumber": "121042880000001",
-                    "category": "Forward"
+                    "category": "Forward",
+                    "addenda05": [
+                      {
+                        "id": "adam-01",
+                        "paymentRelatedInformation": "EXAMPLE PAYMENT",
+                        "sequenceNumber": 1,
+                        "entryDetailSequenceNumber": 1
+                      }
+                    ]
                 }
             ],
             "batchControl": {
                 "id": "adam-01",
                 "serviceClassCode": 200,
-                "entryAddendaÇount": 2,
+                "entryAddendaÇount": 1,
                 "entryHash": 23138010,
                 "totalDebit": 0,
                 "totalCredit": 100000,
@@ -57,7 +65,7 @@
         "id": "adam-01",
         "batchCount": 1,
         "blockCount": 1,
-        "entryAddendaCount": 2,
+        "entryAddendaCount": 1,
         "entryHash": 23138010,
         "totalDebit": 0,
         "totalCredit": 100000

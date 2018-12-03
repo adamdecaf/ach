@@ -29,7 +29,7 @@ type FileControl struct {
 	EntryAddendaCount int `json:"entryAddendaCount"`
 
 	// EntryHash calculated in the same manner as the batch has total but includes total from entire file
-	EntryHash int `json:"entryHash"`
+	EntryHash int `json:"entryHash,omitempty"`
 
 	// TotalDebitEntryDollarAmountInFile contains accumulated Batch debit totals within the file.
 	TotalDebitEntryDollarAmountInFile int `json:"totalDebit"`
@@ -141,7 +141,7 @@ func (fc *FileControl) fieldInclusion() error {
 	if fc.EntryHash == 0 {
 		return &FieldError{
 			FieldName: "EntryHash",
-			Value:     fc.EntryAddendaCountField(),
+			Value:     fc.EntryHashField(),
 			Msg:       msgFieldInclusion + ", did you use NewFileControl()?",
 		}
 	}

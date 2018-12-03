@@ -5,6 +5,7 @@
 package ach
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
@@ -32,6 +33,13 @@ func mockPPDEntryDetail() *EntryDetail {
 	entry.IndividualName = "Wade Arnold"
 	entry.SetTraceNumber(mockBatchPPDHeader().ODFIIdentification, 1)
 	entry.Category = CategoryForward
+	entry.AddendaRecordIndicator = 0
+
+	// addenda := NewAddenda05()
+	// addenda.PaymentRelatedInformation = "EXAMPLE PAYMENT"
+	// addenda.SequenceNumber = 1
+	// addenda.EntryDetailSequenceNumber = 1
+	// entry.AddAddenda05(addenda)
 	return entry
 }
 
@@ -60,6 +68,13 @@ func mockPPDEntryDetail2() *EntryDetail {
 	entry.IndividualName = "Wade Arnold"
 	entry.SetTraceNumber(mockBatchPPDHeader2().ODFIIdentification, 1)
 	entry.Category = CategoryForward
+	entry.AddendaRecordIndicator = 0
+
+	// addenda := NewAddenda05()
+	// addenda.PaymentRelatedInformation = "EXAMPLE PAYMENT"
+	// addenda.SequenceNumber = 1
+	// addenda.EntryDetailSequenceNumber = 1
+	// entry.AddAddenda05(addenda)
 	return entry
 }
 
@@ -68,7 +83,7 @@ func mockBatchPPD() *BatchPPD {
 	mockBatch := NewBatchPPD(mockBatchPPDHeader())
 	mockBatch.AddEntry(mockPPDEntryDetail())
 	if err := mockBatch.Create(); err != nil {
-		panic(err)
+		panic(fmt.Sprintf("batch.Control=%#v, %v", mockBatch.Control, err))
 	}
 	return mockBatch
 }

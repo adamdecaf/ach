@@ -35,7 +35,7 @@ func testParseAddenda05(t testing.TB) {
 
 	r := NewReader(strings.NewReader(line))
 
-	//Add a new BatchPPD
+	// Add a new BatchPPD
 	r.addCurrentBatch(NewBatchPPD(mockBatchPPDHeader()))
 
 	//Add a PPDEntryDetail

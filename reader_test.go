@@ -145,8 +145,16 @@ func testPPDDebitRead(t testing.TB) {
 	defer f.Close()
 	r := NewReader(f)
 	_, err = r.Read()
+
+	// if err := r.File.Create(); err != nil {
+	// 	t.Fatal(err)
+	// }
+
 	if err != nil {
 		t.Errorf("%T: %s", err, err)
+	}
+	if err := r.File.Create(); err != nil {
+		t.Fatalf("%T: %v", err, err)
 	}
 	if err = r.File.Validate(); err != nil {
 		t.Errorf("%T: %s", err, err)
@@ -175,6 +183,11 @@ func testWEBDebitRead(t testing.TB) {
 	defer f.Close()
 	r := NewReader(f)
 	_, err = r.Read()
+
+	if err := r.File.Create(); err != nil {
+		t.Fatal(err)
+	}
+
 	if err != nil {
 		t.Errorf("%T: %s", err, err)
 	}
@@ -1052,8 +1065,12 @@ func testFileAddBatchValidation(t testing.TB) {
 	bh := mockBatchHeader()
 	ed := mockEntryDetail()
 	bc := mockBatchControl()
+	bc.TotalCreditEntryDollarAmount = 100000000
+	bc.EntryHash = 12104288
+
 	line := bh.String() + "\n" + ed.String() + "\n" + bc.String()
 	r := NewReader(strings.NewReader(line))
+
 	_, err := r.Read()
 	if el, ok := err.(ErrorList); ok {
 		if p, ok := el.Err().(*ParseError); ok {
@@ -1187,6 +1204,10 @@ func testACHFileRead(t testing.TB) {
 	r := NewReader(f)
 	_, err = r.Read()
 
+	if err := r.File.Create(); err != nil {
+		t.Fatal(err)
+	}
+
 	if err != nil {
 		if el, ok := err.(ErrorList); ok {
 			if p, ok := el.Err().(*ParseError); ok {
@@ -1238,6 +1259,10 @@ func testACHFileRead2(t testing.TB) {
 	defer f.Close()
 	r := NewReader(f)
 	_, err = r.Read()
+
+	if err := r.File.Create(); err != nil {
+		t.Fatal(err)
+	}
 
 	if err != nil {
 		if el, ok := err.(ErrorList); ok {

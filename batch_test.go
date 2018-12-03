@@ -271,6 +271,7 @@ func testBatchEntryCountEquality(t testing.TB) {
 	}
 
 	mockBatch.GetControl().EntryAddendaCount = 1
+
 	if err := mockBatch.verify(); err != nil {
 		if e, ok := err.(*BatchError); ok {
 			if e.FieldName != "EntryAddendaCount" {
@@ -297,7 +298,7 @@ func testBatchAddendaIndicator(t testing.TB) {
 	mockBatch := mockBatch()
 	mockBatch.GetEntries()[0].AddAddenda05(mockAddenda05())
 	mockBatch.GetEntries()[0].AddendaRecordIndicator = 0
-	mockBatch.GetControl().EntryAddendaCount = 2
+	mockBatch.GetControl().EntryAddendaCount = 1
 	if err := mockBatch.verify(); err != nil {
 		if e, ok := err.(*BatchError); ok {
 			if e.FieldName != "AddendaRecordIndicator" {
@@ -355,7 +356,7 @@ func testBatchIsSequenceAscending(t testing.TB) {
 	e3 := mockEntryDetail()
 	e3.TraceNumber = "1"
 	mockBatch.AddEntry(e3)
-	mockBatch.GetControl().EntryAddendaCount = 2
+	mockBatch.GetControl().EntryAddendaCount = 0
 	if err := mockBatch.verify(); err != nil {
 		if e, ok := err.(*BatchError); ok {
 			if e.FieldName != "TraceNumber" {

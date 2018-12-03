@@ -32,7 +32,7 @@ type BatchControl struct {
 	//
 	// In this context the Entry Hash is the sum of the corresponding fields in the
 	// Entry Detail Records on the file.
-	EntryHash int `json:"entryHash"`
+	EntryHash int `json:"entryHash,omitempty"`
 	// TotalDebitEntryDollarAmount Contains accumulated Entry debit totals within the batch.
 	TotalDebitEntryDollarAmount int `json:"totalDebit"`
 	// TotalCreditEntryDollarAmount Contains accumulated Entry credit totals within the batch.
