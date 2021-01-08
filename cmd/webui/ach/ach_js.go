@@ -61,7 +61,15 @@ func jsonWrapper() js.Func {
 	return jsonFunc
 }
 
+func version() js.Func {
+	jsonFunc := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		return ach.Version
+	})
+	return jsonFunc
+}
+
 func main() {
 	js.Global().Set("parseContents", jsonWrapper())
+	js.Global().Set("achVersion", version())
 	<-make(chan bool)
 }
