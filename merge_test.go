@@ -164,10 +164,10 @@ func TestMergeFiles__lineCount(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if n, err := lineCount(file); n != 1 || err != nil {
+	if n, err := lineCount(file); n != 5 || err != nil {
 		// We've optimized small file line counts to bypass writing out the file
 		// into plain text as it's costly.
-		t.Errorf("did we change optimizations? n=%d error=%v", n, err)
+		t.Errorf("unexpected line count: got %d error=%v", n, err)
 	}
 
 	// Add 100 batches to file and get a real line count
@@ -176,14 +176,14 @@ func TestMergeFiles__lineCount(t *testing.T) {
 	if err := file.Create(); err != nil {
 		t.Fatal(err)
 	}
-	if n, err := lineCount(file); n != 310 || err != nil {
+	if n, err := lineCount(file); n != 305 || err != nil {
 		t.Errorf("unexpected line count of %d: %v", n, err)
 	}
 
-	// make the file invalid and ensure we error
+	// make the file invalid and still get a valid count
 	file.Control.BatchCount = 0
-	if n, err := lineCount(file); n != 0 || err == nil {
-		t.Errorf("expected error n=%d error=%v", n, err)
+	if n, err := lineCount(file); n != 305 || err != nil {
+		t.Errorf("expected no error n=%d error=%v", n, err)
 	}
 }
 
