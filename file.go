@@ -465,7 +465,8 @@ func (f *File) Create() error {
 	return nil
 }
 
-// AddBatch appends a Batch to the ach.File
+// AddBatch adds the Batch to the ach.File in the correct order given the first entry's TraceNumber.
+// Batches are assumed to be valid when added.
 func (f *File) AddBatch(batch Batcher) []Batcher {
 	if batch.Category() == CategoryNOC {
 		f.NotificationOfChange = append(f.NotificationOfChange, batch)
@@ -473,7 +474,34 @@ func (f *File) AddBatch(batch Batcher) []Batcher {
 	if batch.Category() == CategoryReturn {
 		f.ReturnEntries = append(f.ReturnEntries, batch)
 	}
+
+	var incomingTrace string
+	if entries := batch.GetEntries(); len(entries) > 0 {
+		incomingTrace = entries[0].TraceNumber
+	}
+	// Check each Batch to insert at the appropriate point
+	for i := range f.Batches {
+		entries := f.Batches[i].GetEntries()
+		if len(entries) == 0 {
+			continue
+		}
+		// Check TraceNumber and insert if we're at the appropiate point.
+		// Then return our file's Batches
+		if incomingTrace < entries[0].TraceNumber {
+			// Push Batches down in the array
+			// The current entry's TraceNumber is greater so insert at the previous index
+			index := i - 1
+			if index >= 0 {
+				f.Batches = append(f.Batches[:index+1], f.Batches[index:]...)
+				f.Batches[index] = batch
+				return f.Batches
+			}
+		}
+	}
+
+	// Prepend Batch at the start of the slice
 	f.Batches = append(f.Batches, batch)
+
 	return f.Batches
 }
 
