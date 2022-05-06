@@ -1114,7 +1114,7 @@ func (b *Batch) upsertOffsets() error {
 				b.Control.TotalDebitEntryDollarAmount -= b.Entries[i].Amount
 			}
 			// remove the EntryDetail
-			b.Control.EntryAddendaCount -= 1
+			b.Control.EntryAddendaCount -= b.Entries[i].addendaCount()
 			b.Entries = append(b.Entries[:i], b.Entries[i+i:]...)
 			i--
 		}
@@ -1156,12 +1156,12 @@ func (b *Batch) upsertOffsets() error {
 	// Add both EntryDetails to our Batch and recalculate some fields
 	if debitED != nil {
 		b.AddEntry(debitED)
-		b.Control.EntryAddendaCount += 1
+		b.Control.EntryAddendaCount += 1 + debitED.addendaCount()
 		b.Control.TotalDebitEntryDollarAmount += debitED.Amount
 	}
 	if creditED != nil {
 		b.AddEntry(creditED)
-		b.Control.EntryAddendaCount += 1
+		b.Control.EntryAddendaCount += 1 + creditED.addendaCount()
 		b.Control.TotalCreditEntryDollarAmount += creditED.Amount
 	}
 	b.Header.ServiceClassCode = MixedDebitsAndCredits
@@ -1180,8 +1180,27 @@ func createOffsetEntryDetail(off *Offset, batch *Batch) *EntryDetail {
 	ed.IdentificationNumber = "" // left empty
 	ed.IndividualName = "OFFSET"
 	ed.DiscretionaryData = batch.offset.Description
+
 	if len(batch.Entries) > 0 {
 		ed.Category = batch.Entries[0].Category
+
+		// Copy over Addenda records
+		if addenda := batch.Entries[0].Addenda02; addenda != nil {
+			ed.Addenda02 = addenda
+			ed.AddendaRecordIndicator = 1
+		}
+		if len(batch.Entries[0].Addenda05) > 0 {
+			copy(ed.Addenda05, batch.Entries[0].Addenda05)
+			ed.AddendaRecordIndicator = 1
+		}
+		if addenda := batch.Entries[0].Addenda98; addenda != nil {
+			ed.Addenda98 = addenda
+			ed.AddendaRecordIndicator = 1
+		}
+		if addenda := batch.Entries[0].Addenda99; addenda != nil {
+			ed.Addenda99 = addenda
+			ed.AddendaRecordIndicator = 1
+		}
 	}
 	return ed
 }
