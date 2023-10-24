@@ -27,8 +27,16 @@ import (
 // ADVBatchControl contains entry counts, dollar total and has totals for all
 // entries contained in the preceding batch
 type ADVBatchControl struct {
+	// validator is composed for data validation
+	validator
+	// converters is composed for ACH to golang Converters
+	converters
 	// ID is a client defined string used as a reference to this record.
 	ID string `json:"id"`
+	// ACHOperatorData is an alphanumeric code used to identify an ACH Operator
+	ACHOperatorData string `json:"achOperatorData"`
+	// ODFIIdentification the routing number is used to identify the DFI originating entries within a given branch.
+	ODFIIdentification string `json:"ODFIIdentification"`
 	// This should be the same as BatchHeader ServiceClassCode for ADV: AutomatedAccountingAdvices.
 	ServiceClassCode int `json:"serviceClassCode"`
 	// EntryAddendaCount is a tally of each Entry Detail Record and each Addenda
@@ -45,19 +53,11 @@ type ADVBatchControl struct {
 	TotalDebitEntryDollarAmount int `json:"totalDebit"`
 	// TotalCreditEntryDollarAmount Contains accumulated Entry credit totals within the batch.
 	TotalCreditEntryDollarAmount int `json:"totalCredit"`
-	// ACHOperatorData is an alphanumeric code used to identify an ACH Operator
-	ACHOperatorData string `json:"achOperatorData"`
-	// ODFIIdentification the routing number is used to identify the DFI originating entries within a given branch.
-	ODFIIdentification string `json:"ODFIIdentification"`
 	// BatchNumber this number is assigned in ascending sequence to each batch by the ODFI
 	// or its Sending Point in a given file of entries. Since the batch number
 	// in the Batch Header Record and the Batch Control Record is the same,
 	// the ascending sequence number should be assigned by batch and not by record.
 	BatchNumber int `json:"batchNumber"`
-	// validator is composed for data validation
-	validator
-	// converters is composed for ACH to golang Converters
-	converters
 }
 
 // Parse takes the input record string and parses the EntryDetail values

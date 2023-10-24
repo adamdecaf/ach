@@ -27,6 +27,11 @@ import (
 // Addenda98 is a Addendumer addenda record format for Notification OF Change(98)
 // The field contents for Notification of Change Entries must match the field contents of the original Entries
 type Addenda98 struct {
+
+	// validator is composed for data validation
+	validator
+	// converters is composed for ACH to GoLang Converters
+	converters
 	// ID is a client defined string used as a reference to this record.
 	ID string `json:"id"`
 	// TypeCode Addenda types code '98'
@@ -46,11 +51,6 @@ type Addenda98 struct {
 	//
 	// Use TraceNumberField for a properly formatted string representation.
 	TraceNumber string `json:"traceNumber,omitempty"`
-
-	// validator is composed for data validation
-	validator
-	// converters is composed for ACH to GoLang Converters
-	converters
 }
 
 var (

@@ -23,6 +23,11 @@ import (
 )
 
 type Addenda98Refused struct {
+
+	// validator is composed for data validation
+	validator
+	// converters is composed for ACH to GoLang Converters
+	converters
 	// ID is a client defined string used as a reference to this record.
 	ID string `json:"id"`
 
@@ -54,11 +59,6 @@ type Addenda98Refused struct {
 	//
 	// Use TraceNumberField for a properly formatted string representation.
 	TraceNumber string `json:"traceNumber"`
-
-	// validator is composed for data validation
-	validator
-	// converters is composed for ACH to GoLang Converters
-	converters
 }
 
 // NewAddenda98Refused returns an reference to an instantiated Addenda98Refused with default values

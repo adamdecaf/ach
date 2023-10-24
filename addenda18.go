@@ -31,6 +31,10 @@ import (
 // processing of the IAT entry. If no Foreign Correspondent Bank is involved,t he record should not be
 // included. A maximum of five of these Addenda Records may be included with each IAT entry.
 type Addenda18 struct {
+	// validator is composed for data validation
+	validator
+	// converters is composed for ACH to GoLang Converters
+	converters
 	// ID is a client defined string used as a reference to this record.
 	ID string `json:"id"`
 	// TypeCode Addenda18 types code '18'
@@ -61,10 +65,6 @@ type Addenda18 struct {
 	// the same as the last seven digits of the trace number of the related
 	// Entry Detail Record or Corporate Entry Detail Record.
 	EntryDetailSequenceNumber int `json:"entryDetailSequenceNumber"`
-	// validator is composed for data validation
-	validator
-	// converters is composed for ACH to GoLang Converters
-	converters
 }
 
 // NewAddenda18 returns a new Addenda18 with default values for none exported fields

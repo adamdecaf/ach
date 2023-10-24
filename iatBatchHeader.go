@@ -42,42 +42,25 @@ import (
 // the name and physical address of the Originator, name and physical address of the
 // Receiver, Receiver's account number, Receiver's bank identity and reason for the payment.
 type IATBatchHeader struct {
-	// ID is a client defined string used as a reference to this record.
-	ID string `json:"id"`
 
-	// ServiceClassCode ACH Mixed Debits and Credits '200'
-	// ACH Credits Only '220'
-	// ACH Debits Only '225'
-	ServiceClassCode int `json:"serviceClassCode"`
+	// validator is composed for data validation
+	validator
+
+	// converters is composed for ACH to golang Converters
+	converters
+
+	// EffectiveEntryDate the date on which the entries are to settle. Format: YYMMDD (Y=Year, M=Month, D=Day)
+	EffectiveEntryDate string `json:"effectiveEntryDate,omitempty"`
+
+	// ISODestinationCurrencyCode is the three-character code, as approved by the International
+	// Organization for Standardization (ISO), to identify the currency denomination in which the
+	// entry will ultimately be settled. If the final destination of funds is within the territorial
+	// jurisdiction of the U.S., enter “USD”, otherwise refer to International Organization for
+	// Standardization website for value: www.iso.org -- (Payment Currency)
+	ISODestinationCurrencyCode string `json:"ISODestinationCurrencyCode"`
 
 	// IATIndicator - Leave Blank - It is only used for corrected IAT entries
 	IATIndicator string `json:"IATIndicator,omitempty"`
-
-	// ForeignExchangeIndicator is a code indicating currency conversion
-	//
-	// FV Fixed-to-Variable – Entry is originated in a fixed-value amount
-	// and is to be received in a variable amount resulting from the
-	// execution of the foreign exchange conversion.
-	//
-	// VF Variable-to-Fixed – Entry is originated in a variable-value
-	// amount based on a specific foreign exchange rate for conversion to a
-	// fixed-value amount in which the entry is to be received.
-	//
-	// FF Fixed-to-Fixed – Entry is originated in a fixed-value amount and
-	// is to be received in the same fixed-value amount in the same
-	// currency denomination. There is no foreign exchange conversion for
-	// entries transmitted using this code. For entries originated in a fixed value
-	// amount, the foreign Exchange Reference Field will be space
-	// filled.
-	ForeignExchangeIndicator string `json:"foreignExchangeIndicator"`
-
-	// ForeignExchangeReferenceIndicator is a code used to indicate the content of the
-	// Foreign Exchange Reference Field and is filled by the gateway operator.
-	// Valid entries are:
-	// 1 - Foreign Exchange Rate;
-	// 2 - Foreign Exchange Reference Number; or
-	// 3 - Space Filled
-	ForeignExchangeReferenceIndicator int `json:"foreignExchangeReferenceIndicator"`
 
 	// ForeignExchangeReference  Contains either the foreign exchange rate used to execute
 	// the foreign exchange conversion of a cross-border entry or another reference to the foreign
@@ -129,24 +112,29 @@ type IATBatchHeader struct {
 	// website for value: www.iso.org -- (Account Currency)
 	ISOOriginatingCurrencyCode string `json:"ISOOriginatingCurrencyCode"`
 
-	// ISODestinationCurrencyCode is the three-character code, as approved by the International
-	// Organization for Standardization (ISO), to identify the currency denomination in which the
-	// entry will ultimately be settled. If the final destination of funds is within the territorial
-	// jurisdiction of the U.S., enter “USD”, otherwise refer to International Organization for
-	// Standardization website for value: www.iso.org -- (Payment Currency)
-	ISODestinationCurrencyCode string `json:"ISODestinationCurrencyCode"`
+	// ForeignExchangeIndicator is a code indicating currency conversion
+	//
+	// FV Fixed-to-Variable – Entry is originated in a fixed-value amount
+	// and is to be received in a variable amount resulting from the
+	// execution of the foreign exchange conversion.
+	//
+	// VF Variable-to-Fixed – Entry is originated in a variable-value
+	// amount based on a specific foreign exchange rate for conversion to a
+	// fixed-value amount in which the entry is to be received.
+	//
+	// FF Fixed-to-Fixed – Entry is originated in a fixed-value amount and
+	// is to be received in the same fixed-value amount in the same
+	// currency denomination. There is no foreign exchange conversion for
+	// entries transmitted using this code. For entries originated in a fixed value
+	// amount, the foreign Exchange Reference Field will be space
+	// filled.
+	ForeignExchangeIndicator string `json:"foreignExchangeIndicator"`
 
-	// EffectiveEntryDate the date on which the entries are to settle. Format: YYMMDD (Y=Year, M=Month, D=Day)
-	EffectiveEntryDate string `json:"effectiveEntryDate,omitempty"`
+	// ID is a client defined string used as a reference to this record.
+	ID string `json:"id"`
 
 	// SettlementDate Leave blank, this field is inserted by the ACH operator
 	SettlementDate string `json:"settlementDate,omitempty"`
-
-	// OriginatorStatusCode refers to the ODFI initiating the Entry.
-	// 0 ADV File prepared by an ACH Operator.
-	// 1 This code identifies the Originator as a depository financial institution.
-	// 2 This code identifies the Originator as a Federal Government entity or agency.
-	OriginatorStatusCode int `json:"originatorStatusCode,omitempty"`
 
 	// ODFIIdentification First 8 digits of the originating DFI transit routing number
 	// For Inbound IAT Entries, this field contains the routing number of the U.S. Gateway
@@ -155,6 +143,12 @@ type IATBatchHeader struct {
 	// Format - TTTTAAAA
 	ODFIIdentification string `json:"ODFIIdentification"`
 
+	// OriginatorStatusCode refers to the ODFI initiating the Entry.
+	// 0 ADV File prepared by an ACH Operator.
+	// 1 This code identifies the Originator as a depository financial institution.
+	// 2 This code identifies the Originator as a Federal Government entity or agency.
+	OriginatorStatusCode int `json:"originatorStatusCode,omitempty"`
+
 	// BatchNumber is assigned in ascending sequence to each batch by the ODFI
 	// or its Sending Point in a given file of entries. Since the batch number
 	// in the Batch Header Record and the Batch Control Record is the same,
@@ -162,11 +156,18 @@ type IATBatchHeader struct {
 	// record.
 	BatchNumber int `json:"batchNumber"`
 
-	// validator is composed for data validation
-	validator
+	// ForeignExchangeReferenceIndicator is a code used to indicate the content of the
+	// Foreign Exchange Reference Field and is filled by the gateway operator.
+	// Valid entries are:
+	// 1 - Foreign Exchange Rate;
+	// 2 - Foreign Exchange Reference Number; or
+	// 3 - Space Filled
+	ForeignExchangeReferenceIndicator int `json:"foreignExchangeReferenceIndicator"`
 
-	// converters is composed for ACH to golang Converters
-	converters
+	// ServiceClassCode ACH Mixed Debits and Credits '200'
+	// ACH Credits Only '220'
+	// ACH Debits Only '225'
+	ServiceClassCode int `json:"serviceClassCode"`
 }
 
 const (

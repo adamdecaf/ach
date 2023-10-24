@@ -25,6 +25,10 @@ import (
 // ADVFileControl record contains entry counts, dollar totals and hash
 // totals accumulated from each batchADV control record in the file.
 type ADVFileControl struct {
+	// validator is composed for data validation
+	validator
+	// converters is composed for ACH to golang Converters
+	converters
 	// ID is a client defined string used as a reference to this record.
 	ID string `json:"id"`
 
@@ -46,10 +50,6 @@ type ADVFileControl struct {
 
 	// TotalCreditEntryDollarAmountInFile contains accumulated Batch credit totals within the file.
 	TotalCreditEntryDollarAmountInFile int `json:"totalCredit"`
-	// validator is composed for data validation
-	validator
-	// converters is composed for ACH to golang Converters
-	converters
 }
 
 // Parse takes the input record string and parses the FileControl values

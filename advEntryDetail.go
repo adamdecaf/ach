@@ -29,8 +29,51 @@ import (
 // withdrawal (debit), the transit routing number for the entry recipient's financial
 // institution, the account number (left justify,no zero fill), name, and dollar amount.
 type ADVEntryDetail struct {
+	// validator is composed for data validation
+	validator
+	// converters is composed for ACH to golang Converters
+	converters
+	// ACHOperatorData
+	ACHOperatorData string `json:"achOperatorData,omitempty"`
+	// Category defines if the entry is a Forward, Return, or NOC
+	Category string `json:"category,omitempty"`
+	// DFIAccountNumber is the receiver's bank account number you are crediting/debiting.
+	// It important to note that this is an alphanumeric field, so its space padded, no zero padded
+	DFIAccountNumber string `json:"DFIAccountNumber"`
+	// RDFIIdentification is the RDFI's routing number without the last digit.
+	// Receiving Depository Financial Institution
+	RDFIIdentification string `json:"RDFIIdentification"`
+	// AdviceRoutingNumber
+	AdviceRoutingNumber string `json:"adviceRoutingNumber"`
+	// FileIdentification
+	FileIdentification string `json:"fileIdentification,omitempty"`
 	// ID is a client defined string used as a reference to this record.
 	ID string `json:"id"`
+	// IndividualName The name of the receiver, usually the name on the bank account
+	IndividualName string `json:"individualName"`
+	// DiscretionaryData allows ODFIs to include codes, of significance only to them,
+	// to enable specialized handling of the entry. There will be no
+	// standardized interpretation for the value of this field. It can either
+	// be a single two-character code, or two distinct one-character codes,
+	// according to the needs of the ODFI and/or Originator involved. This
+	// field must be returned intact for any returned entry.
+	DiscretionaryData string `json:"discretionaryData,omitempty"`
+	// CheckDigit the last digit of the RDFI's routing number
+	CheckDigit string `json:"checkDigit"`
+	// ACHOperatorRoutingNumber
+	ACHOperatorRoutingNumber string `json:"achOperatorRoutingNumber"`
+	// AddendaRecordIndicator indicates the existence of an Addenda Record.
+	// A value of "1" indicates that one ore more addenda records follow,
+	// and "0" means no such record is present.
+	AddendaRecordIndicator int `json:"addendaRecordIndicator,omitempty"`
+	// SequenceNumber
+	SequenceNumber int `json:"sequenceNumber"`
+	// Addenda99 for use with Returns
+	Addenda99 *Addenda99 `json:"addenda99,omitempty"`
+	// JulianDay
+	JulianDay int `json:"julianDay"`
+	// Amount Number of cents you are debiting/crediting this account
+	Amount int `json:"amount"`
 	// TransactionCode representing Accounting Entries
 	// Credit for ACH debits originated - 81
 	// Debit for ACH credits originated - 82
@@ -41,49 +84,6 @@ type ADVEntryDetail struct {
 	// Summary credit for respondent ACH activity - 87
 	// Summary debit for respondent ACH activity - 88
 	TransactionCode int `json:"transactionCode"`
-	// RDFIIdentification is the RDFI's routing number without the last digit.
-	// Receiving Depository Financial Institution
-	RDFIIdentification string `json:"RDFIIdentification"`
-	// CheckDigit the last digit of the RDFI's routing number
-	CheckDigit string `json:"checkDigit"`
-	// DFIAccountNumber is the receiver's bank account number you are crediting/debiting.
-	// It important to note that this is an alphanumeric field, so its space padded, no zero padded
-	DFIAccountNumber string `json:"DFIAccountNumber"`
-	// Amount Number of cents you are debiting/crediting this account
-	Amount int `json:"amount"`
-	// AdviceRoutingNumber
-	AdviceRoutingNumber string `json:"adviceRoutingNumber"`
-	// FileIdentification
-	FileIdentification string `json:"fileIdentification,omitempty"`
-	// ACHOperatorData
-	ACHOperatorData string `json:"achOperatorData,omitempty"`
-	// IndividualName The name of the receiver, usually the name on the bank account
-	IndividualName string `json:"individualName"`
-	// DiscretionaryData allows ODFIs to include codes, of significance only to them,
-	// to enable specialized handling of the entry. There will be no
-	// standardized interpretation for the value of this field. It can either
-	// be a single two-character code, or two distinct one-character codes,
-	// according to the needs of the ODFI and/or Originator involved. This
-	// field must be returned intact for any returned entry.
-	DiscretionaryData string `json:"discretionaryData,omitempty"`
-	// AddendaRecordIndicator indicates the existence of an Addenda Record.
-	// A value of "1" indicates that one ore more addenda records follow,
-	// and "0" means no such record is present.
-	AddendaRecordIndicator int `json:"addendaRecordIndicator,omitempty"`
-	// ACHOperatorRoutingNumber
-	ACHOperatorRoutingNumber string `json:"achOperatorRoutingNumber"`
-	// JulianDay
-	JulianDay int `json:"julianDay"`
-	// SequenceNumber
-	SequenceNumber int `json:"sequenceNumber"`
-	// Addenda99 for use with Returns
-	Addenda99 *Addenda99 `json:"addenda99,omitempty"`
-	// Category defines if the entry is a Forward, Return, or NOC
-	Category string `json:"category,omitempty"`
-	// validator is composed for data validation
-	validator
-	// converters is composed for ACH to golang Converters
-	converters
 }
 
 const (

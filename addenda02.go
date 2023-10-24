@@ -26,13 +26,12 @@ import (
 // Code 02 in a machine readable format. It is usually formatted according to ANSI, ASC, X12 Standard.
 // It is used for following StandardEntryClassCode: MTE, POS, and SHR.
 type Addenda02 struct {
-	// ID is a client defined string used as a reference to this record.
-	ID string `json:"id"`
-	// TypeCode Addenda02 type code '02'
-	TypeCode string `json:"typeCode"`
-	// ReferenceInformationOne may be used for additional reference numbers, identification numbers,
-	// or codes that the merchant needs to identify the particular transaction or customer.
-	ReferenceInformationOne string `json:"referenceInformationOne,omitempty"`
+	// validator is composed for data validation
+	validator
+	// converters is composed for ACH to GoLang Converters
+	converters
+	// TransactionDate expressed MMDD identifies the date on which the transaction occurred.
+	TransactionDate string `json:"transactionDate"`
 	// ReferenceInformationTwo  may be used for additional reference numbers, identification numbers,
 	// or codes that the merchant needs to identify the particular transaction or customer.
 	ReferenceInformationTwo string `json:"referenceInformationTwo,omitempty"`
@@ -43,8 +42,8 @@ type Addenda02 struct {
 	// number, with the Terminal Identification Code, serves as an audit trail for the transaction and is
 	// usually assigned in ascending sequence.
 	TransactionSerialNumber string `json:"transactionSerialNumber"`
-	// TransactionDate expressed MMDD identifies the date on which the transaction occurred.
-	TransactionDate string `json:"transactionDate"`
+	// ID is a client defined string used as a reference to this record.
+	ID string `json:"id"`
 	// AuthorizationCodeOrExpireDate indicates the code that a card authorization center has
 	// furnished to the merchant.
 	AuthorizationCodeOrExpireDate string `json:"authorizationCodeOrExpireDate,omitempty"`
@@ -59,10 +58,11 @@ type Addenda02 struct {
 	//
 	// Use TraceNumberField for a properly formatted string representation.
 	TraceNumber string `json:"traceNumber,omitempty"`
-	// validator is composed for data validation
-	validator
-	// converters is composed for ACH to GoLang Converters
-	converters
+	// ReferenceInformationOne may be used for additional reference numbers, identification numbers,
+	// or codes that the merchant needs to identify the particular transaction or customer.
+	ReferenceInformationOne string `json:"referenceInformationOne,omitempty"`
+	// TypeCode Addenda02 type code '02'
+	TypeCode string `json:"typeCode"`
 }
 
 // NewAddenda02 returns a new Addenda02 with default values for none exported fields

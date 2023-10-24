@@ -30,6 +30,10 @@ import (
 // The Addenda17 record identifies payment-related data. A maximum of two of these Addenda Records
 // may be included with each IAT entry.
 type Addenda17 struct {
+	// validator is composed for data validation
+	validator
+	// converters is composed for ACH to GoLang Converters
+	converters
 	// ID is a client defined string used as a reference to this record.
 	ID string `json:"id"`
 	// TypeCode Addenda17 types code '17'
@@ -45,10 +49,6 @@ type Addenda17 struct {
 	// the same as the last seven digits of the trace number of the related
 	// Entry Detail Record or Corporate Entry Detail Record.
 	EntryDetailSequenceNumber int `json:"entryDetailSequenceNumber"`
-	// validator is composed for data validation
-	validator
-	// converters is composed for ACH to GoLang Converters
-	converters
 }
 
 // NewAddenda17 returns a new Addenda17 with default values for none exported fields

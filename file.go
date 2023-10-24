@@ -624,19 +624,17 @@ func (f *File) SetValidation(opts *ValidateOpts) {
 // ValidateOpts contains specific overrides from the default set of validations
 // performed on a NACHA file, records and various fields within.
 type ValidateOpts struct {
-	// SkipAll will disable all validation checks of a File. It has no effect when set on records.
-	SkipAll bool `json:"skipAll"`
 
-	// RequireABAOrigin can be set to enable routing number validation
-	// over the ImmediateOrigin file header field.
-	RequireABAOrigin bool `json:"requireABAOrigin"`
-
-	// BypassOriginValidation can be set to skip validation for the
-	// ImmediateOrigin file header field.
+	// CheckTransactionCode allows for custom validation of TransactionCode values
 	//
-	// This also allows for custom TraceNumbers which aren't prefixed with
-	// a routing number as required by the NACHA specification.
-	BypassOriginValidation bool `json:"bypassOriginValidation"`
+	// Note: Functions cannot be serialized into/from JSON, so this check cannot be used from config files.
+	CheckTransactionCode func(code int) error `json:"-"`
+
+	// AllowMissingFileControl allows a file to be read without a FileControl record.
+	AllowMissingFileControl bool `json:"allowMissingFileControl"`
+
+	// AllowMissingFileHeader allows a file to be read without a FileHeader record.
+	AllowMissingFileHeader bool `json:"allowMissingFileHeader"`
 
 	// BypassDestinationValidation can be set to skip validation for the
 	// ImmediateDestination file header field.
@@ -645,29 +643,32 @@ type ValidateOpts struct {
 	// a routing number as required by the NACHA specification.
 	BypassDestinationValidation bool `json:"bypassDestinationValidation"`
 
-	// CheckTransactionCode allows for custom validation of TransactionCode values
+	// RequireABAOrigin can be set to enable routing number validation
+	// over the ImmediateOrigin file header field.
+	RequireABAOrigin bool `json:"requireABAOrigin"`
+
+	// BypassCompanyIdentificationMatch allows batches in which the Company Identification field
+	// in the batch header and control do not match.
+	BypassCompanyIdentificationMatch bool `json:"bypassCompanyIdentificationMatch"`
+
+	// AllowZeroBatches allows the file to have zero batches
+	AllowZeroBatches bool `json:"allowZeroBatches"`
+
+	// BypassOriginValidation can be set to skip validation for the
+	// ImmediateOrigin file header field.
 	//
-	// Note: Functions cannot be serialized into/from JSON, so this check cannot be used from config files.
-	CheckTransactionCode func(code int) error `json:"-"`
+	// This also allows for custom TraceNumbers which aren't prefixed with
+	// a routing number as required by the NACHA specification.
+	BypassOriginValidation bool `json:"bypassOriginValidation"`
+
+	// SkipAll will disable all validation checks of a File. It has no effect when set on records.
+	SkipAll bool `json:"skipAll"`
 
 	// CustomTraceNumbers disables Nacha specified checks of TraceNumbers:
 	// - Ascending order of trace numbers within batches
 	// - Trace numbers beginning with their ODFI's routing number
 	// - AddendaRecordIndicator is set correctly
 	CustomTraceNumbers bool `json:"customTraceNumbers"`
-
-	// AllowZeroBatches allows the file to have zero batches
-	AllowZeroBatches bool `json:"allowZeroBatches"`
-
-	// AllowMissingFileHeader allows a file to be read without a FileHeader record.
-	AllowMissingFileHeader bool `json:"allowMissingFileHeader"`
-
-	// AllowMissingFileControl allows a file to be read without a FileControl record.
-	AllowMissingFileControl bool `json:"allowMissingFileControl"`
-
-	// BypassCompanyIdentificationMatch allows batches in which the Company Identification field
-	// in the batch header and control do not match.
-	BypassCompanyIdentificationMatch bool `json:"bypassCompanyIdentificationMatch"`
 
 	// CustomReturnCodes can be set to skip validation for the Return Code field in an Addenda99
 	// This allows for non-standard/deprecated return codes (e.g. R97)

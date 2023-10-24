@@ -30,6 +30,10 @@ import (
 // The Addenda10 Record identifies the Receiver of the transaction and the dollar amount of
 // the payment.
 type Addenda10 struct {
+	// validator is composed for data validation
+	validator
+	// converters is composed for ACH to GoLang Converters
+	converters
 	// ID is a client defined string used as a reference to this record.
 	ID string `json:"id"`
 	// TypeCode Addenda10 types code '10'
@@ -40,22 +44,18 @@ type Addenda10 struct {
 	// WEB = Internet-Initiated Transaction, ARC = Accounts Receivable Entry, BOC = Back Office Conversion Entry,
 	// POP = Point of Purchase Entry, RCK = Re-presented Check Entry
 	TransactionTypeCode string `json:"transactionTypeCode"`
-	// Foreign Payment Amount $$$$$$$$$$$$$$$$¢¢
-	// For inbound IAT payments this field should contain the USD amount or may be blank.
-	ForeignPaymentAmount int `json:"foreignPaymentAmount"`
 	// Foreign Trace Number
 	ForeignTraceNumber string `json:"foreignTraceNumber,omitempty"`
 	// Receiving Company Name/Individual Name
 	Name string `json:"name"`
+	// Foreign Payment Amount $$$$$$$$$$$$$$$$¢¢
+	// For inbound IAT payments this field should contain the USD amount or may be blank.
+	ForeignPaymentAmount int `json:"foreignPaymentAmount"`
 	// EntryDetailSequenceNumber contains the ascending sequence number section of the Entry
 	// Detail or Corporate Entry Detail Record's trace number This number is
 	// the same as the last seven digits of the trace number of the related
 	// Entry Detail Record or Corporate Entry Detail Record.
 	EntryDetailSequenceNumber int `json:"entryDetailSequenceNumber"`
-	// validator is composed for data validation
-	validator
-	// converters is composed for ACH to GoLang Converters
-	converters
 }
 
 // NewAddenda10 returns a new Addenda10 with default values for none exported fields

@@ -26,6 +26,10 @@ import (
 // Code 05 in a machine readable format. It is usually formatted according to ANSI, ASC, X12 Standard.
 // It is used for the following StandardEntryClassCode: ACK, ATX, CCD, CIE, CTX, DNE, ENR, WEB, PPD, TRX.
 type Addenda05 struct {
+	// validator is composed for data validation
+	validator
+	// converters is composed for ACH to GoLang Converters
+	converters
 	// ID is a client defined string used as a reference to this record.
 	ID string `json:"id"`
 	// TypeCode Addenda05 types code '05'
@@ -41,10 +45,6 @@ type Addenda05 struct {
 	// the same as the last seven digits of the trace number of the related
 	// Entry Detail Record or Corporate Entry Detail Record.
 	EntryDetailSequenceNumber int `json:"entryDetailSequenceNumber"`
-	// validator is composed for data validation
-	validator
-	// converters is composed for ACH to GoLang Converters
-	converters
 }
 
 // NewAddenda05 returns a new Addenda05 with default values for none exported fields
