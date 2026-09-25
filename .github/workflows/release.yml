@@ -64,6 +64,10 @@ jobs:
     name: WebUI
     needs: [testing, release]
     runs-on: ubuntu-latest
+    # github-actions[bot] is a bypass actor on the Default branch ruleset so
+    # this job can push wasm with [skip ci]. Required checks stay in that
+    # ruleset for PRs (Renovate automerge). Do not put those checks on classic
+    # branch protection; classic cannot exempt Actions.
     steps:
     - name: Set up Go 1.x
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
